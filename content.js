@@ -126,6 +126,8 @@
           const scanEntry = {
             issueKey,
             issueType,
+            assignee: fields.assignee?.accountId || fields.assignee?.emailAddress || fields.assignee?.name || 'Unassigned',
+            assigneeDisplayName: fields.assignee?.displayName || 'Unassigned',
             timestamp: Date.now(),
             issueCount: afterErrors,
             beforeErrors,
@@ -337,23 +339,40 @@
       return match ? match[1] : null;
     },
 
+    async getCurrentUser() {
+      try {
+        const response = await fetch('/rest/api/2/myself');
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (e) {
+        return null;
+      }
+    },
+
     async getTempoWeeklyHours() {
       try {
         const now = new Date();
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        const day = now.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - diffToMonday);
+        monday.setHours(0, 0, 0, 0);
 
-        const from = startOfWeek.toISOString().split('T')[0];
-        const to = endOfWeek.toISOString().split('T')[0];
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
 
-        const response = await fetch(`/rest/tempo-timesheets/4/worklogs?dateFrom=${from}&dateTo=${to}`);
+        const from = monday.toISOString().split('T')[0];
+        const to = friday.toISOString().split('T')[0];
+
+        const user = await this.getCurrentUser();
+        const url = user
+          ? `/rest/tempo-timesheets/4/worklogs?dateFrom=${from}&dateTo=${to}&username=${encodeURIComponent(user)}`
+          : `/rest/tempo-timesheets/4/worklogs?dateFrom=${from}&dateTo=${to}`;
+
+        const response = await fetch(url);
         if (!response.ok) return 0;
-        
         const data = await response.json();
-        const totalSeconds = data.reduce((sum, log) => sum + (log.timeSpentSeconds || 0), 0);
-        return totalSeconds / 3600;
+        return data.reduce((sum, log) => sum + (log.timeSpentSeconds || 0), 0) / 3600;
       } catch (e) {
         return 0;
       }
@@ -688,9 +707,10 @@
       if (this.isFriday()) {
         const loggedHours = await JiraAPI.getTempoWeeklyHours();
         const requiredHours = settings.weeklyHours;
+        const remaining = requiredHours - loggedHours;
         
-        if (loggedHours < requiredHours) {
-          messages.push(`⏰ ${settings.timelogMessage} - Logged: ${loggedHours.toFixed(1)}h / ${requiredHours}h this week`);
+        if (remaining > 0) {
+          messages.push(`⏰ ${settings.timelogMessage} - ${remaining.toFixed(1)}/${requiredHours}h remaining this week`);
         }
       }
 
@@ -704,18 +724,24 @@
 
       if (messages.length > 0) {
         this.showWarnings(messages);
+      } else {
+        this.clearWarnings();
       }
     },
 
     showWarnings(messages) {
       const banner = document.getElementById('announcement-banner');
       if (!banner) return;
-
       banner.innerHTML = `
         <div style="background: #de350b; color: #fff; padding: 16px; text-align: center; font-weight: 600;">
           ${messages.join(' | ')}
         </div>
       `;
+    },
+
+    clearWarnings() {
+      const banner = document.getElementById('announcement-banner');
+      if (banner) banner.innerHTML = '';
     }
   };
 
@@ -907,6 +933,18 @@
         return;
       }
 
+      // Cache current user and jira base url for analytics page
+      try {
+        chrome.storage.local.set({ jcpJiraBaseUrl: window.location.origin });
+        const user = await JiraAPI.getCurrentUser();
+        if (user) chrome.storage.local.set({ jcpCurrentUser: {
+          accountId: user.accountId,
+          displayName: user.displayName,
+          emailAddress: user.emailAddress || user.name,
+          jiraBaseUrl: window.location.origin
+        }});
+      } catch (e) {}
+
       const issues = await ValidationEngine.validate(apiData, issueKey);
       currentIssues = issues;
 
@@ -964,6 +1002,8 @@
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
           setTimeout(() => runWithThrottle(), 1000);
+          // Re-check Tempo so banner clears after logging hours
+          TempoManager.checkAndApplyFadeEffect();
         }
       });
     },

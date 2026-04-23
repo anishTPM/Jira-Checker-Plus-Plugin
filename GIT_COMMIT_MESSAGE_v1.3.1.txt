@@ -1,0 +1,51 @@
+Release v1.3.1 - Tempo Timesheet Fixes & My Issues Tab Removed
+
+## 🐛 Bug Fixes
+
+### Tempo Weekly Hours Banner
+- **Fixed wrong hours target**: Banner now shows remaining hours out of 40 (e.g. "24.0/40h remaining") instead of comparing logged vs flat 40h target
+- **Fixed week date range**: Worklogs are now fetched from Monday to Friday of the current week (Mon-based) instead of Sunday to Saturday
+- **Fixed user filtering**: Tempo API call now passes `username` parameter to fetch only the current user's worklogs, not all users
+- **Fixed banner persistence**: Banner now clears automatically when hours are fully logged — added `clearWarnings()` and re-check on tab visibility change (`visibilitychange` event)
+- **Fixed banner location**: Reverted to using Jira's native `#announcement-banner` element instead of injecting a new DOM element
+
+### My Issues Tab (Removed)
+- Removed "My Issues" tab from Analytics Dashboard due to Jira API access limitations from extension pages
+- Removed all related functions: `getCurrentUser()`, `fetchMyJiraIssues()`, `loadMyIssues()`
+- Removed `my-issues-section` HTML and nav item
+- Cleaned up unused `jcpCurrentUser`, `jcpJiraBaseUrl` storage references in analytics.js
+
+## 🔧 Technical Changes
+
+### Files Modified
+- `content.js`:
+  - `getTempoWeeklyHours()`: Fetches Mon–Fri of current week, filters by current user via `username` param
+  - `checkAndApplyFadeEffect()`: Shows `X/40h remaining` format, calls `clearWarnings()` when hours met
+  - `showWarnings()` / `clearWarnings()`: Uses `#announcement-banner`, clears innerHTML on resolve
+  - `visibilitychange` listener: Re-runs Tempo check when tab regains focus
+  - Still caches `jcpCurrentUser` and `jcpJiraBaseUrl` for potential future use
+- `analytics.js`:
+  - Removed `getCurrentUser()`, `fetchMyJiraIssues()`, `loadMyIssues()`
+  - Removed My Issues call from `loadAnalytics()`
+  - Reverted save/load to Confluence URL only
+- `analytics.html`:
+  - Removed "My Issues" nav item
+  - Removed `my-issues-section` entirely
+  - Reverted settings section to Confluence URL only
+
+## 📝 Tempo Banner Behaviour
+
+| Scenario | Before | After |
+|----------|--------|-------|
+| Hours message | "Logged: 0.0h / 40h this week" | "24.0/40h remaining this week" |
+| Week range | Sun–Sat | Mon–Fri |
+| User filtering | All users' worklogs | Current user only |
+| After filling hours | Banner stays | Banner clears on tab focus |
+| Banner location | New injected div | Jira's #announcement-banner |
+
+---
+
+**Previous Version**: 1.3.0
+**Current Version**: 1.3.1
+**Release Date**: April 2025
+**Compatibility**: Chrome 88+, Edge 88+, Jira Cloud

@@ -33,61 +33,78 @@ async function loadAnalytics() {
     updateProgressBar('target-end', stats.targetEndPct || 0);
 
     // Display recent scans timeline
-    if (scans.length === 0) {
-      document.getElementById('timeline').innerHTML = '<div class="no-data">No recent scans. Visit a Jira issue page to start tracking.</div>';
-      return;
-    }
-    
-    // Group scans by project
-    const projectGroups = {};
-    scans.forEach(scan => {
-      const project = scan.issueKey.split('-')[0];
-      if (!projectGroups[project]) projectGroups[project] = [];
-      projectGroups[project].push(scan);
-    });
-    
-    const projects = Object.keys(projectGroups).sort();
-    let activeProject = projects[0];
-    
-    // Create project tabs
-    const tabsHTML = projects.map(proj => 
-      `<div class="project-tab ${proj === activeProject ? 'active' : ''}" data-project="${proj}">${proj} (${projectGroups[proj].length})</div>`
-    ).join('');
-    document.getElementById('project-tabs').innerHTML = tabsHTML;
-    
-    // Function to display scans for a project
-    const displayProject = (project) => {
-      const timeline = projectGroups[project].sort((a, b) => b.timestamp - a.timestamp);
-      const timelineHTML = timeline.map(t => {
-        const date = new Date(t.timestamp).toLocaleString();
-        const beforeAfter = t.beforeErrors !== null ? `${t.beforeErrors} → ${t.afterErrors}` : `${t.afterErrors}`;
-        const rescanInfo = t.beforeErrors !== null ? 'Rescan' : 'First scan';
-        const color = t.beforeErrors !== null && t.afterErrors < t.beforeErrors ? '#36b37e' : (t.afterErrors > 0 ? '#ff5630' : '#6b778c');
-        return `<div class="timeline-item">
-          <span><strong>${t.issueKey}</strong> (${t.issueType})</span>
-          <span style="color:${color};font-weight:600">${beforeAfter} errors</span>
-          <span style="font-size:12px;color:#6b778c">${rescanInfo}</span>
-          <span style="font-size:12px;color:#6b778c">${date}</span>
-        </div>`;
-      }).join('');
-      document.getElementById('timeline').innerHTML = timelineHTML;
-    };
-    
-    // Display initial project
-    displayProject(activeProject);
-    
-    // Add tab click handlers
-    document.querySelectorAll('.project-tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        document.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        displayProject(e.target.dataset.project);
-      });
-    });
+    displayRecentScans(scans);
   } catch (error) {
     console.error('Analytics load error:', error);
     document.getElementById('timeline').innerHTML = '<div class="no-data">Error loading analytics.</div>';
   }
+}
+
+function displayRecentScans(scans) {
+  if (scans.length === 0) {
+    document.getElementById('timeline').innerHTML = '<div class="no-data">No recent scans. Visit a Jira issue page to start tracking.</div>';
+    return;
+  }
+  
+  displayScansWithTabs(scans, 'project-tabs', 'timeline');
+}
+
+function displayScansWithTabs(scans, tabsElementId, timelineElementId) {
+  if (scans.length === 0) {
+    document.getElementById(timelineElementId).innerHTML = '<div class="no-data">No scans available.</div>';
+    return;
+  }
+  
+  // Group scans by project
+  const projectGroups = {};
+  scans.forEach(scan => {
+    const project = scan.issueKey.split('-')[0];
+    if (!projectGroups[project]) projectGroups[project] = [];
+    projectGroups[project].push(scan);
+  });
+  
+  const projects = Object.keys(projectGroups).sort();
+  let activeProject = projects[0];
+  
+  // Create project tabs
+  const tabsHTML = projects.map(proj => 
+    `<div class="project-tab ${proj === activeProject ? 'active' : ''}" data-project="${proj}" data-tabs="${tabsElementId}" data-timeline="${timelineElementId}">${proj} (${projectGroups[proj].length})</div>`
+  ).join('');
+  document.getElementById(tabsElementId).innerHTML = tabsHTML;
+  
+  // Function to display scans for a project
+  const displayProject = (project) => {
+    const timeline = projectGroups[project].sort((a, b) => b.timestamp - a.timestamp);
+    const timelineHTML = timeline.map(t => {
+      const date = new Date(t.timestamp).toLocaleString();
+      const beforeAfter = t.beforeErrors !== null ? `${t.beforeErrors} → ${t.afterErrors}` : `${t.afterErrors}`;
+      const rescanInfo = t.beforeErrors !== null ? 'Rescan' : 'First scan';
+      const color = t.beforeErrors !== null && t.afterErrors < t.beforeErrors ? '#36b37e' : (t.afterErrors > 0 ? '#ff5630' : '#6b778c');
+      const assigneeInfo = t.assigneeDisplayName ? `<span style="font-size:12px;color:#6b778c">Assignee: ${t.assigneeDisplayName}</span>` : '';
+      return `<div class="timeline-item">
+        <span><strong>${t.issueKey}</strong> (${t.issueType})</span>
+        <span style="color:${color};font-weight:600">${beforeAfter} errors</span>
+        <span style="font-size:12px;color:#6b778c">${rescanInfo}</span>
+        <span style="font-size:12px;color:#6b778c">${date}</span>
+        ${assigneeInfo}
+      </div>`;
+    }).join('');
+    document.getElementById(timelineElementId).innerHTML = timelineHTML;
+  };
+  
+  // Display initial project
+  displayProject(activeProject);
+  
+  // Add tab click handlers
+  document.querySelectorAll(`#${tabsElementId} .project-tab`).forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      const tabsId = e.target.dataset.tabs;
+      const timelineId = e.target.dataset.timeline;
+      document.querySelectorAll(`#${tabsId} .project-tab`).forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      displayProject(e.target.dataset.project);
+    });
+  });
 }
 
 function updateProgressBar(field, percentage) {
@@ -384,17 +401,15 @@ document.getElementById('sync-confluence-btn').addEventListener('click', async (
 document.getElementById('save-confluence-btn').addEventListener('click', () => {
   const confluenceUrl = document.getElementById('confluence-url').value.trim();
   const statusDiv = document.getElementById('confluence-status');
-  
+
   if (!confluenceUrl) {
     statusDiv.innerHTML = '<span style="color: #de350b;">Please enter a Confluence URL</span>';
     return;
   }
-  
+
   chrome.storage.sync.set({ confluenceUrl }, () => {
     statusDiv.innerHTML = '<span style="color: #36b37e;">✓ Confluence URL saved successfully!</span>';
-    setTimeout(() => {
-      statusDiv.innerHTML = '';
-    }, 3000);
+    setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
   });
 });
 
@@ -496,9 +511,7 @@ async function migrateStorageData() {
 
 // Load saved Confluence URL
 chrome.storage.sync.get(['confluenceUrl'], result => {
-  if (result.confluenceUrl) {
-    document.getElementById('confluence-url').value = result.confluenceUrl;
-  }
+  if (result.confluenceUrl) document.getElementById('confluence-url').value = result.confluenceUrl;
 });
 
 // Sidebar navigation
