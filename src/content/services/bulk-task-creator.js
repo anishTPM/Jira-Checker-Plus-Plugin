@@ -6,6 +6,8 @@ let storyContext = null;
 let cachedMembers = null;
 let cachedFinCategories = null;
 let cachedLinkType = null;
+let cachedSprints = null;
+let canManageSprints = false;
 let currentUser = null;
 
 // ============================================================================
@@ -115,6 +117,49 @@ async function fetchCurrentUser() {
   return null;
 }
 
+async function fetchSprintsAndPermission(projectKey, storyKey) {
+  if (cachedSprints !== null) return { sprints: cachedSprints, canManage: canManageSprints };
+
+  // Check sprint permission
+  try {
+    const r = await fetch(`/rest/api/2/mypermissions?projectKey=${projectKey}&permissions=MANAGE_SPRINTS_PERMISSION,EDIT_ISSUES`);
+    if (r.ok) {
+      const data = await r.json();
+      console.log('JCP Bulk: Permissions:', JSON.stringify(data.permissions));
+      canManageSprints = data.permissions?.MANAGE_SPRINTS_PERMISSION?.havePermission ||
+                         data.permissions?.EDIT_ISSUES?.havePermission || false;
+      console.log('JCP Bulk: canManageSprints =', canManageSprints);
+    }
+  } catch (e) {
+    console.log('JCP Bulk: Permission check failed:', e);
+  }
+
+  cachedSprints = [];
+  return { sprints: [], canManage: canManageSprints };
+}
+
+async function fetchBoards(projectKey) {
+  try {
+    const r = await fetch(`/rest/agile/1.0/board?projectKeyOrId=${projectKey}&maxResults=50`);
+    if (r.ok) {
+      const data = await r.json();
+      return data.values || [];
+    }
+  } catch {}
+  return [];
+}
+
+async function fetchSprintsForBoard(boardId) {
+  try {
+    const r = await fetch(`/rest/agile/1.0/board/${boardId}/sprint?maxResults=50`);
+    if (r.ok) {
+      const all = (await r.json()).values || [];
+      return all.filter(s => s.state === 'active' || s.state === 'future');
+    }
+  } catch {}
+  return [];
+}
+
 async function fetchFinancialCategories() {
   if (cachedFinCategories) return cachedFinCategories;
   // Try edit meta first (most reliable)
@@ -168,7 +213,7 @@ function parseTimeToSeconds(str) {
   return total > 0 ? total : null;
 }
 
-async function createTask(row, ctx, addToSprint) {
+async function createTask(row, ctx) {
   const fields = {
     project: { key: ctx.project },
     issuetype: { name: 'Task' },
@@ -247,11 +292,6 @@ async function createTask(row, ctx, addToSprint) {
           body: JSON.stringify({ fields: { customfield_10000: ctx.epicKey } })
         }).catch(() => {});
       }
-      await fetch(`/rest/api/2/issue/${created.key}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields: { customfield_15401: deliverableLink } })
-      }).catch(() => {});
       if (addToSprint && ctx.sprintId) await addToSprintAPI(created.key, ctx.sprintId);
       return created.key;
     }
@@ -265,7 +305,8 @@ async function createTask(row, ctx, addToSprint) {
   // Note: customfield_15401 (Deliverable Link) requires Jira admin to add it
   // to the Task edit screen before it can be set via API.
 
-  if (addToSprint && ctx.sprintId) await addToSprintAPI(created.key, ctx.sprintId);
+  // Add to sprint if selected on this row
+  if (row.sprintId) await addToSprintAPI(created.key, row.sprintId);
   return created.key;
 }
 
@@ -303,7 +344,7 @@ const STYLES = `
 .jcp-bulk-meta span { background: #f4f5f7; padding: 5px 12px; border-radius: 4px; line-height: 1.4; }
 .jcp-bulk-meta strong { color: #172b4d; }
 .jcp-bulk-row {
-  display: grid; grid-template-columns: 3fr 3fr 100px 100px 180px 180px 32px;
+  display: grid; grid-template-columns: 3fr 3fr 100px 100px 160px 160px 160px 32px;
   gap: 10px; margin-bottom: 10px; align-items: start;
 }
 .jcp-bulk-row-header { font-size: 11px; font-weight: 600; color: #5e6c84; text-transform: uppercase; padding-bottom: 4px; border-bottom: 1px solid #dfe1e6; margin-bottom: 8px; }
@@ -366,13 +407,22 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-function buildRow(index, members, finCategories, ctx, defaults = {}) {
+function buildRow(index, members, finCategories, ctx, defaults = {}, sprints = []) {
   const fcDefault = defaults.financialCategory || ctx.financialCategory?.id || '';
   const assigneeDefault = defaults.assigneeDisplay || '';
   const assigneeValueDefault = defaults.assignee || '';
+  const sprintDefault = defaults.sprintId || ctx.sprintId || '';
   const div = document.createElement('div');
   div.className = 'jcp-bulk-row';
   div.dataset.index = index;
+
+  const sprintOptions = sprints.length
+    ? `<select data-field="sprint">
+        <option value="">-- No Sprint --</option>
+        ${sprints.map(s => `<option value="${s.id}" ${s.id == sprintDefault ? 'selected' : ''}>${s.state === 'active' ? '🟢 ' : '🔵 '}${s.name}</option>`).join('')}
+       </select>`
+    : `<input type="text" placeholder="No sprint access" disabled style="background:#f4f5f7;color:#6b778c;cursor:not-allowed">`;
+
   div.innerHTML = `
     <input type="text" placeholder="Task title *" data-field="title" required>
     <textarea placeholder="Description *" rows="1" data-field="description" required></textarea>
@@ -386,6 +436,7 @@ function buildRow(index, members, finCategories, ctx, defaults = {}) {
       <input type="text" placeholder="Search assignee..." data-field="assigneeSearch" autocomplete="off" value="${assigneeDefault}">
       <input type="hidden" data-field="assignee" value="${assigneeValueDefault}">
     </div>
+    ${sprintOptions}
     <button class="jcp-bulk-remove" title="Remove">×</button>
   `;
 
@@ -443,6 +494,7 @@ function showAssigneeDropdown(wrap, searchInput, hiddenInput, members) {
 
 function getRowData(row) {
   const fcSelect = row.querySelector('[data-field="financialCategory"]');
+  const sprintEl = row.querySelector('[data-field="sprint"]');
   return {
     title: row.querySelector('[data-field="title"]').value.trim(),
     description: row.querySelector('[data-field="description"]').value.trim(),
@@ -451,6 +503,7 @@ function getRowData(row) {
     financialCategory: fcSelect.value,
     financialCategoryName: fcSelect.selectedOptions[0]?.textContent?.trim() || '',
     assignee: row.querySelector('[data-field="assignee"]').value,
+    sprintId: sprintEl?.value || null,
   };
 }
 
@@ -465,6 +518,9 @@ function markError(row, selector, title) {
 export const BulkTaskCreator = {
   async open(issueKey, fields) {
     injectStyles();
+    // Reset sprint cache on each open so permissions are re-checked
+    cachedSprints = null;
+    canManageSprints = false;
 
     const issueType = fields.issuetype?.name?.toLowerCase() || '';
     if (!issueType.includes('story')) return;
@@ -493,11 +549,14 @@ export const BulkTaskCreator = {
 
     // Fetch all data in parallel
     storyContext = await fetchStoryContext(issueKey, fields);
-    const [members, finCategories, me] = await Promise.all([
+    const [members, finCategories, me, sprintData, boards] = await Promise.all([
       fetchProjectMembers(storyContext.project),
       fetchFinancialCategories(),
-      fetchCurrentUser()
+      fetchCurrentUser(),
+      fetchSprintsAndPermission(storyContext.project, storyContext.key),
+      fetchBoards(storyContext.project)
     ]);
+    let sprints = sprintData.sprints;
     await fetchLinkType();
 
     // Default assignee = current user
@@ -543,9 +602,17 @@ export const BulkTaskCreator = {
         <span>🏷️ Epic: <strong>${storyContext.epicKey}</strong>${storyContext.epicName ? ` — ${storyContext.epicName}` : ''}</span>
         ${storyContext.programName ? `<span>📁 Program: <strong>${storyContext.programName}</strong></span>` : ''}
         ${storyContext.sprintName ? `<span>🏃 Sprint: <strong>${storyContext.sprintName}</strong></span>` : ''}
+        ${canManageSprints && boards.length ? `
+        <span style="display:flex;align-items:center;gap:6px">
+          📌 Board:
+          <select id="jcp-board-select" style="font-size:12px;padding:3px 6px;border:1px solid #dfe1e6;border-radius:4px;color:#172b4d">
+            <option value="">-- Select Board --</option>
+            ${boards.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+          </select>
+        </span>` : ''}
       </div>
       <div class="jcp-bulk-row jcp-bulk-row-header">
-        <span>Title *</span><span>Description</span><span>Estimate</span><span>Remaining</span><span>Financial Cat.</span><span>Assignee</span><span></span>
+        <span>Title *</span><span>Description *</span><span>Estimate *</span><span>Remaining *</span><span>Financial Cat. *</span><span>Assignee *</span>${canManageSprints && boards.length ? '<span>Sprint</span>' : ''}<span></span>
       </div>
       <div id="jcp-bulk-rows"></div>
       <button class="jcp-bulk-btn jcp-bulk-btn-secondary" id="jcp-bulk-add-row" style="margin-top:8px">+ Add Task</button>
@@ -558,7 +625,7 @@ export const BulkTaskCreator = {
     footer.className = 'jcp-bulk-footer';
     footer.innerHTML = `
       <div class="jcp-bulk-footer-left">
-        ${storyContext.sprintId ? `<label class="jcp-bulk-sprint-check"><input type="checkbox" id="jcp-bulk-sprint-cb" checked> Add to sprint: ${storyContext.sprintName}</label>` : ''}
+        ${canManageSprints ? `<span style="font-size:12px;color:#5e6c84">🟢 Active &nbsp; 🔵 Future sprint</span>` : `<span style="font-size:12px;color:#6b778c">⚠️ No sprint permission</span>`}
       </div>
       <div style="display:flex;gap:8px">
         <button class="jcp-bulk-btn jcp-bulk-btn-secondary" id="jcp-bulk-cancel">Cancel</button>
@@ -568,20 +635,60 @@ export const BulkTaskCreator = {
     dialog.appendChild(footer);
 
     const rowsContainer = modal.querySelector('#jcp-bulk-rows');
-    rowsContainer.appendChild(buildRow(0, members, finCategories, storyContext, selfDefaults));
+    rowsContainer.appendChild(buildRow(0, members, finCategories, storyContext, selfDefaults, sprints));
+
+    // Board dropdown handler — reload sprints and rebuild rows
+    const boardSelect = modal.querySelector('#jcp-board-select');
+    if (boardSelect) {
+      boardSelect.addEventListener('change', async () => {
+        const boardId = boardSelect.value;
+        if (!boardId) { sprints = []; }
+        else {
+          boardSelect.disabled = true;
+          boardSelect.options[0].text = 'Loading sprints...';
+          sprints = await fetchSprintsForBoard(boardId);
+          boardSelect.disabled = false;
+          boardSelect.options[0].text = '-- Select Board --';
+          console.log('JCP Bulk: Sprints for board', boardId, ':', sprints.map(s => `${s.name} (${s.state})`));
+        }
+        // Rebuild all existing rows with new sprints
+        const existingRows = rowsContainer.querySelectorAll('.jcp-bulk-row');
+        existingRows.forEach((row, i) => {
+          const data = getRowData(row);
+          const newRow = buildRow(i, members, finCategories, storyContext, {
+            financialCategory: data.financialCategory,
+            assignee: data.assignee,
+            assigneeDisplay: row.querySelector('[data-field="assigneeSearch"]').value,
+            sprintId: data.sprintId,
+          }, sprints);
+          // Restore filled values
+          newRow.querySelector('[data-field="title"]').value = data.title;
+          newRow.querySelector('[data-field="description"]').value = data.description;
+          newRow.querySelector('[data-field="estimate"]').value = data.estimate;
+          newRow.querySelector('[data-field="remaining"]').value = data.remaining;
+          row.replaceWith(newRow);
+        });
+        // Update header sprint column
+        const header = modal.querySelector('.jcp-bulk-row-header');
+        if (header) {
+          const spans = header.querySelectorAll('span');
+          const sprintSpan = spans[spans.length - 2];
+          if (sprintSpan) sprintSpan.textContent = sprints.length ? 'Sprint' : '';
+        }
+      });
+    }
 
     modal.querySelector('#jcp-bulk-add-row').addEventListener('click', () => {
       const existingRows = rowsContainer.querySelectorAll('.jcp-bulk-row');
       const lastRow = existingRows[existingRows.length - 1];
-      // Copy financial category and assignee from last row
       const copyDefaults = lastRow ? {
         financialCategory: lastRow.querySelector('[data-field="financialCategory"]').value,
         assignee: lastRow.querySelector('[data-field="assignee"]').value,
         assigneeDisplay: lastRow.querySelector('[data-field="assigneeSearch"]').value,
+        sprintId: lastRow.querySelector('[data-field="sprint"]')?.value || '',
       } : selfDefaults;
-      rowsContainer.appendChild(buildRow(existingRows.length, members, finCategories, storyContext, copyDefaults));
+      rowsContainer.appendChild(buildRow(existingRows.length, members, finCategories, storyContext, copyDefaults, sprints));
     });
-
     modal.querySelector('#jcp-bulk-cancel').addEventListener('click', () => this.close());
     modal.querySelector('#jcp-bulk-create').addEventListener('click', () => this._createAll(rowsContainer));
   },
@@ -590,7 +697,6 @@ export const BulkTaskCreator = {
     const rows = rowsContainer.querySelectorAll('.jcp-bulk-row');
     const statusEl = modal.querySelector('#jcp-bulk-status');
     const createBtn = modal.querySelector('#jcp-bulk-create');
-    const addToSprint = modal.querySelector('#jcp-bulk-sprint-cb')?.checked || false;
 
     const tasks = [];
     const validationErrors = [];
@@ -628,7 +734,7 @@ export const BulkTaskCreator = {
     for (const { data, row } of tasks) {
       try {
         statusEl.textContent = `Creating ${created + 1}/${tasks.length}: ${data.title}...`;
-        const taskKey = await createTask(data, storyContext, addToSprint);
+        const taskKey = await createTask(data, storyContext);
         created++;
         row.style.opacity = '0.4';
         row.style.pointerEvents = 'none';

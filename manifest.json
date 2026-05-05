@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jira Checker Plus",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Validates Jira issues and highlights missing or inconsistent information",
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["*://*.atlassian.net/*", "*://*/jira/*", "*://*/browse/*", "*://*/wiki/*", "*://confluence.tenerity.com/*"],
@@ -28,6 +28,12 @@
     },
     {
       "matches": ["*://*.atlassian.net/projects/*/versions/*", "*://*/projects/*/versions/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*/secure/Tempo*", "*://*/plugins/servlet/ac/io.tempo.jira/*", "*://*.atlassian.net/plugins/servlet/ac/io.tempo.jira/*"],
       "js": ["content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"

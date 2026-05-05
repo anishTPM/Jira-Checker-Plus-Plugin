@@ -5,6 +5,7 @@ import { MetricsTracker } from './services/metrics.js';
 import { TempoManager } from './services/tempo.js';
 import { UIManager } from './services/ui.js';
 import { BulkTaskCreator } from './services/bulk-task-creator.js';
+import { TempoGuard } from './services/tempo-guard.js';
 
 (function () {
   'use strict';
@@ -80,8 +81,9 @@ import { BulkTaskCreator } from './services/bulk-task-creator.js';
   async function init() {
     settings = await StorageService.loadSettings();
 
-    // If on Tempo page, skip
+    // If on Tempo page, only run TempoGuard
     if (window.location.href.includes('/Tempo') || window.location.href.includes('io.tempo.jira')) {
+      TempoGuard.init();
       return;
     }
 
@@ -96,6 +98,8 @@ import { BulkTaskCreator } from './services/bulk-task-creator.js';
     await run();
     setupObserver();
     await TempoManager.check(settings);
+    // Also watch for Tempo log time modal on Jira issue pages
+    TempoGuard.init();
   }
 
   document.readyState === 'loading'

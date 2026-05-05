@@ -2,7 +2,7 @@
 
 A Chrome/Edge browser extension that validates Jira issues, highlights missing or inconsistent information, and provides productivity tools for Jira teams.
 
-> **Version 2.1.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
+> **Version 2.2.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
 
 ---
 
@@ -13,6 +13,9 @@ A Chrome/Edge browser extension that validates Jira issues, highlights missing o
 - ➕ **Bulk Task Creator** — Create multiple linked Tasks from a Story in one go
 - 🔗 **Hierarchy Validations** — Task/Bug must have Epic Link, Epic must have Parent Link
 - 🌐 **Global JCP Settings** — Switch workflows from the Options page
+- 🏃 **Per-row Sprint Selection** — Board dropdown + active/future sprint picker per Task
+- 🚫 **Tempo Log Guard** — Blocks time logging on issues with pending validations
+- ✅ **Mandatory Field Validation** — All Bulk Task Creator fields enforced before creation
 
 ---
 
@@ -69,7 +72,9 @@ Available on Story pages when **New Workflow** is selected. Click **"➕ Add Tas
 - All fields mandatory: Title, Description, Estimate, Remaining, Financial Category, Assignee
 - Sets Story Points = Original Estimate (hidden, auto-calculated)
 - Links Task to Story via "Is a Child of" relationship
-- Optionally adds Tasks to current Sprint
+- **Board dropdown** in modal header — select any project board
+- **Per-row Sprint dropdown** — active 🟢 and future 🔵 sprints loaded from selected board
+- Optionally adds Tasks to selected sprint per row
 
 ### 🌐 Global JCP Settings
 
