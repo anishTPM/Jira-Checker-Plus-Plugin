@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jira Checker Plus — Features</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #172b4d; }
+
+    /* Hero */
+    .hero { background: linear-gradient(135deg, #0052cc 0%, #0747a6 100%); color: #fff; padding: 60px 40px; text-align: center; }
+    .hero h1 { font-size: 36px; font-weight: 700; margin-bottom: 12px; }
+    .hero p { font-size: 16px; opacity: 0.9; max-width: 600px; margin: 0 auto 24px; }
+    .hero .badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 6px 16px; font-size: 13px; margin: 4px; }
+    .hero .cta { display: inline-block; margin-top: 24px; background: #fff; color: #0052cc; font-weight: 700; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; }
+    .hero .cta:hover { background: #f4f5f7; }
+
+    /* Layout */
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+    .section-title { font-size: 22px; font-weight: 700; color: #172b4d; margin-bottom: 8px; }
+    .section-sub { font-size: 14px; color: #5e6c84; margin-bottom: 28px; }
+    .section { margin-bottom: 56px; }
+
+    /* Feature Grid */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .feature-card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-top: 3px solid #0052cc; }
+    .feature-card.green { border-top-color: #36b37e; }
+    .feature-card.orange { border-top-color: #ff8b00; }
+    .feature-card.purple { border-top-color: #6554c0; }
+    .feature-card.red { border-top-color: #de350b; }
+    .feature-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .feature-card p { font-size: 13px; color: #5e6c84; line-height: 1.6; }
+
+    /* Validation Table */
+    .val-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .val-table th { background: #172b4d; color: #fff; padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .val-table td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #f4f5f7; }
+    .val-table tr:last-child td { border-bottom: none; }
+    .val-table tr:hover td { background: #f8f9fa; }
+    .badge-both { background: #e3f2fd; color: #0052cc; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-std { background: #fff8e1; color: #ff8b00; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-new { background: #e8f5e9; color: #36b37e; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+    /* Workflow */
+    .workflow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .workflow-card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .workflow-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .workflow-card .sub { font-size: 13px; color: #5e6c84; margin-bottom: 16px; }
+    .workflow-card ul { list-style: none; }
+    .workflow-card ul li { font-size: 13px; color: #172b4d; padding: 5px 0; border-bottom: 1px solid #f4f5f7; display: flex; align-items: center; gap: 8px; }
+    .workflow-card ul li:last-child { border-bottom: none; }
+    .workflow-card ul li::before { content: '✓'; color: #36b37e; font-weight: 700; }
+
+    /* Steps */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .step { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; }
+    .step .num { width: 36px; height: 36px; background: #0052cc; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin: 0 auto 12px; }
+    .step p { font-size: 13px; color: #5e6c84; }
+
+    /* Footer */
+    footer { background: #172b4d; color: #b3bac5; text-align: center; padding: 24px; font-size: 13px; }
+    footer a { color: #4c9aff; text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .workflow-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>⚡ Jira Checker Plus</h1>
+    <p>A Chrome/Edge extension that validates Jira issues, enforces team standards, and boosts productivity — automatically.</p>
+    <div>
+      <span class="badge">v2.1.0</span>
+      <span class="badge">Chrome & Edge</span>
+      <span class="badge">Jira Cloud & Server</span>
+    </div>
+    <a href="https://github.com/anishTPM/Jira-Checker-Plus-Plugin" class="cta" target="_blank">View on GitHub →</a>
+  </div>
+
+  <div class="container">
+
+    <!-- Key Features -->
+    <div class="section">
+      <div class="section-title">Key Features</div>
+      <div class="section-sub">Everything your team needs to maintain Jira hygiene</div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>🔍 Smart Validation</h3>
+          <p>Automatically validates every Jira issue on page load. Shows a toolbar button with error count and highlights missing fields with red borders.</p>
+        </div>
+        <div class="feature-card green">
+          <h3>➕ Bulk Task Creator</h3>
+          <p>Create multiple Tasks at once from a Story page. Auto-fills Epic, Program, Sprint, Financial Category, and Assignee. All fields mandatory.</p>
+        </div>
+        <div class="feature-card orange">
+          <h3>🔀 Dual Workflow Support</h3>
+          <p>Switch between Standard (Story → Sub-tasks) and New Workflow (Story → Tasks). Validation rules adapt automatically to your team's process.</p>
+        </div>
+        <div class="feature-card purple">
+          <h3>📊 Analytics Dashboard</h3>
+          <p>Track scan history, field completion rates, issues fixed, and sync data to Confluence. Export to CSV for reporting.</p>
+        </div>
+        <div class="feature-card red">
+          <h3>⏰ Tempo Reminders</h3>
+          <p>Friday reminder if weekly hours aren't logged. Month-end reminder if timesheet isn't submitted. Fully configurable messages.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🔗 Hierarchy Validation</h3>
+          <p>Ensures Tasks and Bugs have Epic Links, and Epics have Parent Links. Keeps your Jira hierarchy clean and traceable.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow -->
+    <div class="section">
+      <div class="section-title">Workflow Modes</div>
+      <div class="section-sub">Choose the workflow that matches your team's Jira setup</div>
+      <div class="workflow-grid">
+        <div class="workflow-card" style="border-left: 4px solid #ff8b00;">
+          <h3>🟡 Standard Workflow</h3>
+          <div class="sub">Story → Sub-tasks (classic Jira)</div>
+          <ul>
+            <li>Original Estimate required on Sub-tasks</li>
+            <li>Sub-task 100% logged validation</li>
+            <li>Story must have Sub-tasks (beyond NEW)</li>
+            <li>Story closes when all Sub-tasks done</li>
+            <li>Target dates validated on Sub-tasks</li>
+          </ul>
+        </div>
+        <div class="workflow-card" style="border-left: 4px solid #36b37e;">
+          <h3>🟢 New Workflow <span style="font-size:11px;background:#e8f5e9;color:#36b37e;padding:2px 8px;border-radius:10px;margin-left:6px;">Default</span></h3>
+          <div class="sub">Story → Tasks (linked via "Is a Child of")</div>
+          <ul>
+            <li>Original Estimate required on Tasks</li>
+            <li>Task 100% logged validation</li>
+            <li>Story must have linked Tasks (beyond NEW)</li>
+            <li>Story closes when all linked Tasks done</li>
+            <li>Target dates validated on Tasks</li>
+            <li>Bulk Task Creator button on Story pages</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation Rules -->
+    <div class="section">
+      <div class="section-title">Validation Rules</div>
+      <div class="section-sub">
+        <span class="badge-both">🔵 Both</span> &nbsp;
+        <span class="badge-std">🟡 Standard Only</span> &nbsp;
+        <span class="badge-new">🟢 New Workflow Only</span>
+      </div>
+      <table class="val-table">
+        <thead>
+          <tr><th>Rule</th><th>Applies To</th><th>Workflow</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Description Missing</td><td>Story, Bug (optional: Sub-task, Epic, Task)</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Assignee Missing</td><td>Story, Task, Sub-task, Bug (optional: Epic)</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Priority Missing</td><td>Story, Task, Sub-task, Bug (optional: Epic)</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Financial Category Missing</td><td>Story, Task, Bug, Sub-task</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Story Points Missing</td><td>Story (beyond NEW/Defined status)</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Task must have Epic Link</td><td>Task</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Bug must have Epic Link</td><td>Bug</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Epic must have Parent Link</td><td>Epic</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Time Logged in Epic/Story</td><td>Epic, Story</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Time Logged but To Do</td><td>All issue types</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>In Progress but No Sprint</td><td>Story, Task, Bug</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Fix Version Released but Not Done</td><td>All issue types</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Fix Version Past Date Not Released</td><td>All issue types</td><td><span class="badge-both">Both</span></td></tr>
+          <tr><td>Original Estimate Missing</td><td>Sub-task</td><td><span class="badge-std">Standard</span></td></tr>
+          <tr><td>Sub-task 100% Logged but Open</td><td>Sub-task</td><td><span class="badge-std">Standard</span></td></tr>
+          <tr><td>Story No Sub-tasks</td><td>Story (beyond NEW)</td><td><span class="badge-std">Standard</span></td></tr>
+          <tr><td>Story Should Be Closed</td><td>Story (all Sub-tasks + Bugs done)</td><td><span class="badge-std">Standard</span></td></tr>
+          <tr><td>Target Start/End Overdue</td><td>Story, Sub-task</td><td><span class="badge-std">Standard</span></td></tr>
+          <tr><td>Original Estimate Missing</td><td>Task</td><td><span class="badge-new">New Workflow</span></td></tr>
+          <tr><td>Task 100% Logged but Open</td><td>Task</td><td><span class="badge-new">New Workflow</span></td></tr>
+          <tr><td>Story No Linked Tasks</td><td>Story (beyond NEW)</td><td><span class="badge-new">New Workflow</span></td></tr>
+          <tr><td>Story Should Be Closed</td><td>Story (all linked Tasks done)</td><td><span class="badge-new">New Workflow</span></td></tr>
+          <tr><td>Target Start/End Overdue</td><td>Story, Task</td><td><span class="badge-new">New Workflow</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bulk Task Creator -->
+    <div class="section">
+      <div class="section-title">➕ Bulk Task Creator</div>
+      <div class="section-sub">Create multiple Tasks from a Story in seconds — available in New Workflow mode</div>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><p>Open any Story page and click <strong>"➕ Add Tasks"</strong> in the toolbar</p></div>
+        <div class="step"><div class="num">2</div><p>Modal loads with Story, Epic, Program, and Sprint context auto-filled</p></div>
+        <div class="step"><div class="num">3</div><p>Fill in Task details — Title, Description, Estimate, Financial Category, Assignee</p></div>
+        <div class="step"><div class="num">4</div><p>Click <strong>"+ Add Task"</strong> to add more rows. Fields copy from previous row</p></div>
+        <div class="step"><div class="num">5</div><p>Click <strong>"Create All"</strong> — Tasks are created, linked to Story, and added to Sprint</p></div>
+      </div>
+    </div>
+
+    <!-- Installation -->
+    <div class="section">
+      <div class="section-title">Installation</div>
+      <div class="section-sub">Get started in under a minute</div>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><p>Download the latest release from <a href="https://github.com/anishTPM/Jira-Checker-Plus-Plugin/releases" target="_blank">GitHub Releases</a></p></div>
+        <div class="step"><div class="num">2</div><p>Open <strong>chrome://extensions/</strong> and enable <strong>Developer Mode</strong></p></div>
+        <div class="step"><div class="num">3</div><p>Click <strong>"Load unpacked"</strong> and select the <code>build/</code> folder</p></div>
+        <div class="step"><div class="num">4</div><p>Navigate to any Jira issue — the extension activates automatically</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Jira Checker Plus v2.1.0 &nbsp;|&nbsp; Created by <a href="https://github.com/anishTPM" target="_blank">Anish Shah</a> &nbsp;|&nbsp; <a href="https://github.com/anishTPM/Jira-Checker-Plus-Plugin" target="_blank">GitHub</a> &nbsp;|&nbsp; MIT License</p>
+  </footer>
+
+</body>
+</html>

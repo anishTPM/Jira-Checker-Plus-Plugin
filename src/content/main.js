@@ -42,8 +42,12 @@ import { BulkTaskCreator } from './services/bulk-task-creator.js';
     UIManager.createButton(issues, () => { run(); UIManager.notify('Rescanning...'); });
     if (issues.length > 0) UIManager.highlightFields(issues);
 
-    // Show bulk task button for stories
-    BulkTaskCreator.addButton(issueKey, apiData.fields);
+    // Show bulk task button only for New Workflow (Story -> Tasks)
+    if (settings.workflow === 'new') {
+      BulkTaskCreator.addButton(issueKey, apiData.fields);
+    } else {
+      document.getElementById('jcp-bulk-btn-wrap')?.remove();
+    }
   }
 
   function setupObserver() {

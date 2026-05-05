@@ -193,8 +193,9 @@ async function createTask(row, ctx, addToSprint) {
     fields.customfield_10000 = ctx.epicKey;
   }
 
-  // Deliverable Link = Story key - Story summary
-  fields.customfield_15401 = `${ctx.key} - ${ctx.summary}`;
+  // Deliverable Link = Story key - Story summary (set via PUT after creation)
+  // Note: customfield_15401 is not on create screen, set separately
+  const deliverableLink = `${ctx.key} - ${ctx.summary}`;
 
   // Build payload with story link in update block
   const payload = { fields };
@@ -238,7 +239,7 @@ async function createTask(row, ctx, addToSprint) {
         throw new Error(err2.errors ? Object.values(err2.errors).join(', ') : err2.errorMessages?.join(', ') || `HTTP ${r2.status}`);
       }
       const created = await r2.json();
-      // Set epic via PUT
+      // Set epic and deliverable link via PUT
       if (ctx.epicKey) {
         await fetch(`/rest/api/2/issue/${created.key}`, {
           method: 'PUT',
@@ -246,6 +247,11 @@ async function createTask(row, ctx, addToSprint) {
           body: JSON.stringify({ fields: { customfield_10000: ctx.epicKey } })
         }).catch(() => {});
       }
+      await fetch(`/rest/api/2/issue/${created.key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { customfield_15401: deliverableLink } })
+      }).catch(() => {});
       if (addToSprint && ctx.sprintId) await addToSprintAPI(created.key, ctx.sprintId);
       return created.key;
     }
@@ -255,6 +261,9 @@ async function createTask(row, ctx, addToSprint) {
 
   const created = await r.json();
   console.log('JCP Bulk: Created', created.key, '→ Story:', ctx.key, '→ Epic:', ctx.epicKey);
+
+  // Note: customfield_15401 (Deliverable Link) requires Jira admin to add it
+  // to the Task edit screen before it can be set via API.
 
   if (addToSprint && ctx.sprintId) await addToSprintAPI(created.key, ctx.sprintId);
   return created.key;
@@ -365,12 +374,12 @@ function buildRow(index, members, finCategories, ctx, defaults = {}) {
   div.className = 'jcp-bulk-row';
   div.dataset.index = index;
   div.innerHTML = `
-    <input type="text" placeholder="Task title *" data-field="title">
-    <textarea placeholder="Description (optional)" rows="1" data-field="description"></textarea>
-    <input type="text" placeholder="e.g. 2h, 1d" data-field="estimate">
-    <input type="text" placeholder="Remaining" data-field="remaining">
-    <select data-field="financialCategory">
-      <option value="">-- Financial Cat --</option>
+    <input type="text" placeholder="Task title *" data-field="title" required>
+    <textarea placeholder="Description *" rows="1" data-field="description" required></textarea>
+    <input type="text" placeholder="e.g. 2h, 1d *" data-field="estimate" required>
+    <input type="text" placeholder="Remaining *" data-field="remaining" required>
+    <select data-field="financialCategory" required>
+      <option value="">-- Financial Cat *--</option>
       ${finCategories.map(fc => `<option value="${fc.id}" ${fc.id == fcDefault ? 'selected' : ''}>${fc.value || fc.name}</option>`).join('')}
     </select>
     <div class="jcp-bulk-assignee-wrap">
@@ -382,8 +391,17 @@ function buildRow(index, members, finCategories, ctx, defaults = {}) {
 
   const estInput = div.querySelector('[data-field="estimate"]');
   const remInput = div.querySelector('[data-field="remaining"]');
-  estInput.addEventListener('input', () => { if (!remInput.dataset.touched) remInput.value = estInput.value; });
-  remInput.addEventListener('input', () => { remInput.dataset.touched = '1'; });
+  estInput.addEventListener('input', () => {
+    estInput.style.borderColor = '';
+    if (!remInput.dataset.touched) remInput.value = estInput.value;
+  });
+  remInput.addEventListener('input', () => { remInput.style.borderColor = ''; remInput.dataset.touched = '1'; });
+
+  // Clear error on input for all fields
+  div.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', () => { el.style.borderColor = ''; });
+    el.addEventListener('change', () => { el.style.borderColor = ''; });
+  });
 
   const searchInput = div.querySelector('[data-field="assigneeSearch"]');
   const hiddenInput = div.querySelector('[data-field="assignee"]');
@@ -434,6 +452,11 @@ function getRowData(row) {
     financialCategoryName: fcSelect.selectedOptions[0]?.textContent?.trim() || '',
     assignee: row.querySelector('[data-field="assignee"]').value,
   };
+}
+
+function markError(row, selector, title) {
+  const el = row.querySelector(selector);
+  if (el) { el.style.borderColor = '#de350b'; el.title = title; }
 }
 
 // ============================================================================
@@ -570,10 +593,22 @@ export const BulkTaskCreator = {
     const addToSprint = modal.querySelector('#jcp-bulk-sprint-cb')?.checked || false;
 
     const tasks = [];
+    const validationErrors = [];
     for (const row of rows) {
       const data = getRowData(row);
-      if (!data.title) continue;
+      if (!data.title) { markError(row, '[data-field="title"]', 'Title is required'); validationErrors.push('Title missing'); continue; }
+      if (!data.description) { markError(row, '[data-field="description"]', 'Description is required'); validationErrors.push('Description missing'); continue; }
+      if (!data.estimate) { markError(row, '[data-field="estimate"]', 'Estimate is required'); validationErrors.push('Estimate missing'); continue; }
+      if (!data.remaining) { markError(row, '[data-field="remaining"]', 'Remaining is required'); validationErrors.push('Remaining missing'); continue; }
+      if (!data.financialCategory) { markError(row, '[data-field="financialCategory"]', 'Financial Category is required'); validationErrors.push('Financial Category missing'); continue; }
+      if (!data.assignee) { markError(row, '[data-field="assigneeSearch"]', 'Assignee is required'); validationErrors.push('Assignee missing'); continue; }
       tasks.push({ data, row });
+    }
+
+    if (validationErrors.length) {
+      statusEl.className = 'jcp-bulk-status error';
+      statusEl.textContent = 'Please fill all required fields (highlighted in red).';
+      return;
     }
 
     if (!tasks.length) {
@@ -635,7 +670,7 @@ export const BulkTaskCreator = {
     wrap.id = 'jcp-bulk-btn-wrap';
     wrap.className = 'aui-buttons';
     wrap.style.marginRight = '8px';
-    wrap.innerHTML = `<button class="aui-button" id="jcp-bulk-trigger" style="background:#f4f5f7;color:#42526e;font-size:13px;font-weight:500">➕ Add Tasks</button>`;
+    wrap.innerHTML = `<button class="aui-button" id="jcp-bulk-trigger" style="background:#f4f5f7;color:#42526e;font-size:14px;font-weight:500">➕ Add Tasks</button>`;
     toolbar.insertBefore(wrap, toolbar.firstChild);
 
     wrap.querySelector('#jcp-bulk-trigger').addEventListener('click', () => this.open(issueKey, fields));

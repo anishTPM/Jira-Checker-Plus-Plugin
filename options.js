@@ -1,5 +1,6 @@
 // Default settings
 const DEFAULT_SETTINGS = {
+  workflow: 'new',
   descSubtask: false,
   descEpic: false,
   descTask: true,
@@ -13,6 +14,9 @@ const DEFAULT_SETTINGS = {
 // Load settings
 function loadSettings() {
   chrome.storage.sync.get(DEFAULT_SETTINGS, (settings) => {
+    document.getElementById('workflow-standard').checked = settings.workflow !== 'new';
+    document.getElementById('workflow-new').checked = settings.workflow === 'new';
+    highlightWorkflow(settings.workflow || 'standard');
     document.getElementById('desc-subtask').checked = settings.descSubtask;
     document.getElementById('desc-epic').checked = settings.descEpic;
     document.getElementById('desc-task').checked = settings.descTask;
@@ -26,7 +30,9 @@ function loadSettings() {
 
 // Save settings
 function saveSettings() {
+  const workflow = document.querySelector('input[name="workflow"]:checked')?.value || 'standard';
   const newSettings = {
+    workflow,
     descSubtask: document.getElementById('desc-subtask').checked,
     descEpic: document.getElementById('desc-epic').checked,
     descTask: document.getElementById('desc-task').checked,
@@ -71,9 +77,18 @@ function showStatus(message) {
   }, 3000);
 }
 
+function highlightWorkflow(value) {
+  document.getElementById('workflow-standard-label').style.borderColor = value !== 'new' ? '#0052cc' : '#dfe1e6';
+  document.getElementById('workflow-new-label').style.borderColor = value === 'new' ? '#0052cc' : '#dfe1e6';
+}
+
 // Event listeners
 document.getElementById('save-btn').addEventListener('click', saveSettings);
 document.getElementById('reset-btn').addEventListener('click', resetSettings);
+
+document.querySelectorAll('input[name="workflow"]').forEach(radio => {
+  radio.addEventListener('change', () => highlightWorkflow(radio.value));
+});
 
 // Sidebar navigation
 document.querySelectorAll('.nav-item').forEach(item => {

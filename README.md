@@ -1,107 +1,138 @@
 # Jira Checker Plus
 
-A Chrome/Edge browser extension that validates Jira issues and highlights missing or inconsistent information with red flags.
+A Chrome/Edge browser extension that validates Jira issues, highlights missing or inconsistent information, and provides productivity tools for Jira teams.
+
+> **Version 2.1.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
+
+---
+
+## What's New in v2.x
+
+- 🏗️ **SOLID Architecture** — Fully modular codebase with separate services, validators, and shared utilities
+- 🔀 **Dual Workflow Support** — Standard (Story → Sub-tasks) and New Workflow (Story → Tasks)
+- ➕ **Bulk Task Creator** — Create multiple linked Tasks from a Story in one go
+- 🔗 **Hierarchy Validations** — Task/Bug must have Epic Link, Epic must have Parent Link
+- 🌐 **Global JCP Settings** — Switch workflows from the Options page
+
+---
 
 ## Features
 
-### Validation Rules
+### 🔍 Validation Engine
 
-✅ **Description Missing** - Mandatory for Story and Bug (configurable for Sub-task, Epic, Task)  
-✅ **Assignee Missing** - Mandatory for all except Epic (configurable for Epic)  
-✅ **Priority Missing** - Mandatory for all except Epic (configurable for Epic)  
-✅ **Financial Category Missing** - For Story, Task, Bug, Sub-task  
-✅ **Story Points Missing** - For Stories without estimation  
-✅ **Original Estimate Missing** - For Sub-tasks  
-✅ **Time Logged in Epic/Story** - Only allowed in Sub-tasks and Bugs  
-✅ **Time Logged but Status in To Do** - Time logged but still in To Do/Backlog  
-✅ **Sub-task 100% Logged** - Sub-task fully logged but still open  
-✅ **Target Start Overdue** - Target Start date passed but Story/Sub-task still in To Do  
-✅ **Target End Overdue** - Target End date passed but Story/Sub-task not completed  
+Automatically validates Jira issues on page load and shows a toolbar button with error count.
+
+#### Both Workflows
+| Rule | Description |
+|------|-------------|
+| Description Missing | Mandatory for Story and Bug |
+| Assignee Missing | Mandatory for all except Epic |
+| Priority Missing | Mandatory for all except Epic |
+| Financial Category Missing | Story, Task, Bug, Sub-task |
+| Story Points Missing | Story (when status beyond NEW/Defined) |
+| Time Logged in Epic/Story | Not allowed — use Tasks/Sub-tasks |
+| Time Logged but To Do | Time logged but status still in To Do |
+| Released Version Not Done | Fix Version released but issue not Done |
+| Past Release Date Not Released | Fix Version overdue but not marked Released |
+| In Progress No Sprint | Issue in progress but not in a Sprint |
+| **Task must have Epic Link** | `customfield_10000` required on Tasks |
+| **Bug must have Epic Link** | `customfield_10000` required on Bugs |
+| **Epic must have Parent Link** | `customfield_16400` required on Epics |
+
+#### Standard Workflow Only (Story → Sub-tasks)
+| Rule | Description |
+|------|-------------|
+| Original Estimate Missing | Required on Sub-tasks |
+| Sub-task 100% Logged | Sub-task fully logged but still open |
+| Story No Sub-tasks | Story beyond NEW must have Sub-tasks |
+| Story Should Be Closed | All Sub-tasks and Bugs done but Story open |
+| Target Start/End Overdue | For Story and Sub-task |
+
+#### New Workflow Only (Story → Tasks)
+| Rule | Description |
+|------|-------------|
+| Original Estimate Missing | Required on Tasks |
+| Task 100% Logged | Task fully logged but still open |
+| Story No Linked Tasks | Story beyond NEW must have linked Tasks |
+| Story Should Be Closed | All linked Tasks done but Story open |
+| Target Start/End Overdue | For Story and Task |
+
+### ➕ Bulk Task Creator (New Workflow)
+
+Available on Story pages when **New Workflow** is selected. Click **"➕ Add Tasks"** in the toolbar.
+
+- Create multiple Tasks at once linked to the Story
+- Auto-fills Epic Link, Program, Sprint from Story context
+- Blocks creation if Epic or Program is not linked
+- Default assignee = current logged-in user
+- Copies Financial Category and Assignee from previous row
+- All fields mandatory: Title, Description, Estimate, Remaining, Financial Category, Assignee
+- Sets Story Points = Original Estimate (hidden, auto-calculated)
+- Links Task to Story via "Is a Child of" relationship
+- Optionally adds Tasks to current Sprint
+
+### 🌐 Global JCP Settings
+
+Configure the workflow mode from **Options → Global JCP Settings**:
+
+- **Standard Jira Workflow** — Story → Sub-tasks (classic Jira)
+- **New Workflow** — Story → Tasks linked via "Is a Child of" *(default)*
+
+### ⏰ Tempo Timesheet Reminders
+
+- Friday reminder if weekly hours not fully logged (shows `X/40h remaining`)
+- Month-end reminder if timesheet not submitted
+- Configurable messages and weekly hour targets
+
+### 📊 Analytics Dashboard
+
+- Total scans, issues found, average issues per scan
+- Issues fixed through rescans
+- Field completion rates (Description, Story Points, Estimates, Financial Category, Target Dates)
+- Recent scans timeline with project tabs
+- Export to CSV
+- Sync to Confluence page
+
+---
 
 ## Installation
 
-### Chrome/Edge
+1. Open Chrome/Edge → `chrome://extensions/` or `edge://extensions/`
+2. Enable **Developer mode**
+3. Click **Load unpacked**
+4. Select the `build/` folder
+5. Navigate to any Jira issue page
 
-1. Open Chrome/Edge and navigate to `chrome://extensions/` or `edge://extensions/`
-2. Enable "Developer mode" (toggle in top-right corner)
-3. Click "Load unpacked"
-4. Select the `Jira_Checker_Plus_Plugin` folder
-5. The extension is now installed!
-
-## Usage
-
-1. Navigate to any Jira issue page (e.g., `https://yourcompany.atlassian.net/browse/PROJ-123`)
-2. The extension automatically validates the issue
-3. If validation issues are found:
-   - A warning button appears in the toolbar
-   - Click the button to see all validation issues
-   - Missing fields are highlighted with red borders
+---
 
 ## Settings
 
-Right-click the extension icon → **Options** to configure:
+Right-click the extension icon → **Options**:
 
-### Navigation Sidebar
-- **Optional Validations** - Configure optional validation rules
-- **Tempo Settings** - Set up timesheet reminders
-- **Mandatory Rules** - View all mandatory validation rules
-- **Analytics** - Access analytics dashboard
+| Section | Description |
+|---------|-------------|
+| 🌐 Global JCP Settings | Select Standard or New Workflow |
+| Optional Validations | Enable optional rules (description for Sub-task/Epic/Task, assignee/priority for Epic) |
+| Tempo Settings | Weekly hours target, reminder messages |
+| Mandatory Rules | View all enforced rules by workflow |
 
-### Configurable Validations (Unchecked by default)
-- ☐ Require description for Sub-task
-- ☐ Require description for Epic
-- ☐ Require description for Task
-- ☐ Require assignee for Epic
-- ☐ Require priority for Epic
-
-### Strict Validations (Always enforced)
-- Description mandatory for Story and Bug
-- Assignee mandatory for Story, Task, Sub-task, Bug
-- Priority mandatory for Story, Task, Sub-task, Bug
-- Target Start overdue validation for Story/Sub-task
-- Target End overdue validation for Story/Sub-task
-- All other validation rules
-
-## Analytics Dashboard
-
-Access comprehensive analytics through the settings page:
-
-### Key Metrics
-- Total scans performed
-- Total issues found
-- Average issues per scan
-- Rescan count (same page scanned multiple times)
-- Issues fixed through rescans
-
-### Field Completion Rates
-- Description completion
-- Story Points completion
-- Estimates completion
-- Financial Category completion
-- Target Start completion
-- Target End completion
-
-### Recent Scans Timeline
-- Shows last 50 scans with before/after error counts
-- Indicates first scan vs rescan
-- Color-coded by improvement status
-
-### Data Export & Confluence Sync
-- Export analytics data to CSV
-- Manual sync with Confluence page tables
-- Template provided for Confluence table structure
+---
 
 ## Permissions
 
-- `activeTab` - To read Jira page content
-- `storage` - For settings storage
-- `*://*.atlassian.net/*` - To run on Jira Cloud instances
+- `activeTab` — Read Jira page content
+- `storage` — Save settings and analytics
+- `*://*.atlassian.net/*` — Run on Jira Cloud
+- `*://*/jira/*` — Run on Jira Server/Data Center
+
+---
 
 ## Compatibility
 
-- Chrome 88+
-- Edge 88+
-- Jira Cloud (atlassian.net)
+- Chrome 88+, Edge 88+
+- Jira Cloud (atlassian.net) and Jira Server/Data Center
+
+---
 
 ## License
 

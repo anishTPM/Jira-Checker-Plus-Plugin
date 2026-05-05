@@ -14,6 +14,8 @@ export const FieldExtractor = {
   aggregateEstimate: (f) => f.aggregatetimeoriginalestimate || f.timeoriginalestimate || 0,
   targetStart: (f) => f[CUSTOM_FIELDS.TARGET_START],
   targetEnd: (f) => f[CUSTOM_FIELDS.TARGET_END],
+  epicLink: (f) => f[CUSTOM_FIELDS.EPIC_LINK] || null,
+  parentLink: (f) => f[CUSTOM_FIELDS.PARENT_LINK] || null,
   fixVersions: (f) => f.fixVersions || [],
 
   sprint(f) {

@@ -22,21 +22,41 @@ export const ValidationEngine = {
     }
 
     if (type.includes('story') && !type.includes('sub')) {
-      const subtasks = await JiraAPI.getSubtasks(issueKey);
+      const isNewWorkflow = settings.workflow === 'new';
 
-      if (!status.includes('new') && subtasks.length === 0) {
-        issues.push(VALIDATION_RULES.STORY_NO_SUBTASKS);
-      }
+      if (isNewWorkflow) {
+        // New Workflow: check linked Tasks ("Is a Child of")
+        const linkedTasks = await JiraAPI.search(
+          `issue in linkedIssues(${issueKey}, "is parent of") AND issuetype = Task`, 'issuetype,status'
+        );
 
-      for (const st of subtasks) issues.push(...this.validateFields(st.fields, settings, `[${st.key}] `));
+        if (!status.includes('new') && linkedTasks.length === 0) {
+          issues.push(VALIDATION_RULES.STORY_NO_SUBTASKS.replace('Sub-tasks', 'linked Tasks'));
+        }
 
-      if (statusCategory !== 'done' && subtasks.length > 0 &&
-          !status.includes('new') && !status.includes('defined')) {
-        const allDone = subtasks.every(st => F.statusCategory(st.fields) === 'done');
-        if (allDone) {
-          const bugs = await JiraAPI.getLinkedBugs(issueKey);
-          if (bugs.length === 0 || bugs.every(b => F.statusCategory(b.fields) === 'done')) {
-            issues.push(VALIDATION_RULES.STORY_SHOULD_BE_CLOSED);
+        if (statusCategory !== 'done' && linkedTasks.length > 0 &&
+            !status.includes('new') && !status.includes('defined')) {
+          const allDone = linkedTasks.every(t => F.statusCategory(t.fields) === 'done');
+          if (allDone) issues.push(VALIDATION_RULES.STORY_SHOULD_BE_CLOSED);
+        }
+      } else {
+        // Standard Workflow: check Sub-tasks
+        const subtasks = await JiraAPI.getSubtasks(issueKey);
+
+        if (!status.includes('new') && subtasks.length === 0) {
+          issues.push(VALIDATION_RULES.STORY_NO_SUBTASKS);
+        }
+
+        for (const st of subtasks) issues.push(...this.validateFields(st.fields, settings, `[${st.key}] `));
+
+        if (statusCategory !== 'done' && subtasks.length > 0 &&
+            !status.includes('new') && !status.includes('defined')) {
+          const allDone = subtasks.every(st => F.statusCategory(st.fields) === 'done');
+          if (allDone) {
+            const bugs = await JiraAPI.getLinkedBugs(issueKey);
+            if (bugs.length === 0 || bugs.every(b => F.statusCategory(b.fields) === 'done')) {
+              issues.push(VALIDATION_RULES.STORY_SHOULD_BE_CLOSED);
+            }
           }
         }
       }
