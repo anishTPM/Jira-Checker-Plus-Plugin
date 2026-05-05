@@ -3,7 +3,7 @@
 ## First Time Installation
 
 1. Download the latest release:
-   - Go to: https://github.com/anish274/Jira_Checker_Plus_Plugin/releases/latest
+   - Go to: https://github.com/anishTPM/Jira-Checker-Plus-Plugin/releases/latest
    - Download `jira-checker-plus-0.6.0.zip`
    - Extract the ZIP file
 
@@ -25,7 +25,7 @@ To manually check for updates:
 ## Getting Notified of New Versions
 
 **Option 1: Watch GitHub Repository**
-- Go to: https://github.com/anish274/Jira_Checker_Plus_Plugin
+- Go to: https://github.com/anishTPM/Jira-Checker-Plus-Plugin
 - Click "Watch" → "Custom" → Check "Releases"
 - You'll get email notifications for new releases
 
@@ -49,5 +49,5 @@ To manually check for updates:
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/anish274/Jira_Checker_Plus_Plugin/issues
+- GitHub Issues: https://github.com/anishTPM/Jira-Checker-Plus-Plugin/issues
 - Contact: [Your email/Slack]
