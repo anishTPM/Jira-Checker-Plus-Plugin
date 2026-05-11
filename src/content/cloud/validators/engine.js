@@ -26,14 +26,23 @@ export const CloudValidationEngine = {
 
       if (isNewWorkflow) {
         // Cloud: find Tasks where parent = this Story
-        const linkedTasks = await CloudJiraAPI.search(
-          `parent = ${issueKey} AND issuetype = Task`, 'issuetype,status'
-        );
-
-        if (!status.includes('new') && linkedTasks.length === 0) {
-          issues.push(VALIDATION_RULES.STORY_NO_SUBTASKS.replace('Sub-tasks', 'linked Tasks'));
+        let linkedTasks = [];
+        
+        try {
+          // Try parent field query first
+          linkedTasks = await CloudJiraAPI.search(
+            `parent = ${issueKey} AND issuetype = Task`, 'issuetype,status'
+          );
+          console.log(`JCP Cloud: Found ${linkedTasks.length} linked tasks for ${issueKey}`);
+        } catch (e) {
+          console.warn('JCP Cloud: parent query failed:', e);
+          linkedTasks = [];
         }
 
+        // Only show error if we're confident there are no tasks
+        // For now, skip this validation in cloud as search may not work reliably
+        // TODO: Implement reliable task detection for Cloud
+        
         if (statusCategory !== 'done' && linkedTasks.length > 0 &&
             !status.includes('new') && !status.includes('defined')) {
           const allDone = linkedTasks.every(t => F.statusCategory(t.fields) === 'done');
