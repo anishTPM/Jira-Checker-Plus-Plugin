@@ -411,7 +411,7 @@ export const CloudBulkTaskCreator = {
     document.getElementById('jcp-cloud-bulk-btn-wrap')?.remove();
     if (!issueType.includes('story')) return;
 
-    const headerActions = document.querySelector('[data-testid="jira-issue-header-actions"]');
+    const headerActions = document.querySelector('#jira-issue-header-actions');
     if (!headerActions) return;
 
     const wrap = document.createElement('div');

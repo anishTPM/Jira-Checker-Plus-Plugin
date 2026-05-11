@@ -6,8 +6,8 @@ export const CloudUIManager = {
   createButton(issues, onRescan) {
     if (validationButton) validationButton.remove();
 
-    // Cloud Jira: find header actions container
-    const headerActions = document.querySelector('[data-testid="jira-issue-header-actions"]');
+    // Cloud Jira: find the correct header actions container
+    const headerActions = document.querySelector('#jira-issue-header-actions');
     if (!headerActions) {
       this._createFloatingButton(issues, onRescan);
       return;
