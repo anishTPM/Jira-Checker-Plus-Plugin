@@ -10,19 +10,11 @@ export const CloudJiraAPI = {
 
   async search(jql, fields = CLOUD_API_FIELDS, maxResults = 1000) {
     try {
-      const fieldArray = typeof fields === 'string' ? fields.split(',') : fields;
-      const payload = {
-        jql,
-        fields: fieldArray,
-        maxResults
-      };
+      // Use GET with query parameters - POST is deprecated
+      const fieldStr = typeof fields === 'string' ? fields : fields.join(',');
+      const url = `/rest/api/3/issues/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fieldStr)}&maxResults=${maxResults}`;
       
-      // Try POST to /rest/api/3/search first
-      const r = await fetch('/rest/api/3/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const r = await fetch(url);
       
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
