@@ -18,7 +18,7 @@ console.log('Building Jira Checker Plus v2.0.0...\n');
 
 // 1. Build content scripts via Rollup (IIFE, self-contained)
 const contentEntries = [
-  { input: path.join(ROOT, 'src/content/main.js'), output: 'content.js' },
+  { input: path.join(ROOT, 'src/content/main-router.js'), output: 'content.js' },
   { input: path.join(ROOT, 'src/content/release.js'), output: 'release.js' },
 ];
 

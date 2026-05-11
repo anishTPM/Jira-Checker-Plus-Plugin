@@ -43,6 +43,7 @@ export const ISSUE_API_FIELDS = [
 ].join(',');
 
 export const DEFAULT_SETTINGS = {
+  jiraHosting: 'cloud',
   workflow: 'new',
   tempoGuardEnabled: false,
   descSubtask: false,

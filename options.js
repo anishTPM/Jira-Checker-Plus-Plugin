@@ -1,5 +1,5 @@
-// Default settings
 const DEFAULT_SETTINGS = {
+  jiraHosting: 'cloud',
   workflow: 'new',
   tempoGuardEnabled: false,
   descSubtask: false,
@@ -12,12 +12,16 @@ const DEFAULT_SETTINGS = {
   timesheetMessage: 'Please submit your timesheet for this month!'
 };
 
-// Load settings
 function loadSettings() {
   chrome.storage.sync.get(DEFAULT_SETTINGS, (settings) => {
+    document.getElementById('hosting-cloud').checked = settings.jiraHosting === 'cloud';
+    document.getElementById('hosting-onprem').checked = settings.jiraHosting === 'onprem';
+    highlightHosting(settings.jiraHosting || 'cloud');
+    
     document.getElementById('workflow-standard').checked = settings.workflow !== 'new';
     document.getElementById('workflow-new').checked = settings.workflow === 'new';
-    highlightWorkflow(settings.workflow || 'standard');
+    highlightWorkflow(settings.workflow || 'new');
+    
     document.getElementById('tempo-guard-enabled').checked = settings.tempoGuardEnabled || false;
     document.getElementById('desc-subtask').checked = settings.descSubtask;
     document.getElementById('desc-epic').checked = settings.descEpic;
@@ -30,10 +34,11 @@ function loadSettings() {
   });
 }
 
-// Save settings
 function saveSettings() {
-  const workflow = document.querySelector('input[name="workflow"]:checked')?.value || 'standard';
+  const jiraHosting = document.querySelector('input[name="jiraHosting"]:checked')?.value || 'cloud';
+  const workflow = document.querySelector('input[name="workflow"]:checked')?.value || 'new';
   const newSettings = {
+    jiraHosting,
     workflow,
     tempoGuardEnabled: document.getElementById('tempo-guard-enabled').checked,
     descSubtask: document.getElementById('desc-subtask').checked,
@@ -46,22 +51,11 @@ function saveSettings() {
     timesheetMessage: document.getElementById('timesheet-message').value || DEFAULT_SETTINGS.timesheetMessage
   };
 
-  chrome.storage.sync.get(DEFAULT_SETTINGS, (oldSettings) => {
-    const changes = [];
-    if (oldSettings.descSubtask !== newSettings.descSubtask) changes.push('Sub-task description');
-    if (oldSettings.descEpic !== newSettings.descEpic) changes.push('Epic description');
-    if (oldSettings.descTask !== newSettings.descTask) changes.push('Task description');
-    if (oldSettings.assigneeEpic !== newSettings.assigneeEpic) changes.push('Epic assignee');
-    if (oldSettings.priorityEpic !== newSettings.priorityEpic) changes.push('Epic priority');
-    if (oldSettings.weeklyHours !== newSettings.weeklyHours) changes.push('Weekly hours');
-    
-    chrome.storage.sync.set(newSettings, () => {
-      showStatus('Settings saved successfully!');
-    });
+  chrome.storage.sync.set(newSettings, () => {
+    showStatus('Settings saved successfully!');
   });
 }
 
-// Reset to defaults
 function resetSettings() {
   chrome.storage.sync.set(DEFAULT_SETTINGS, () => {
     loadSettings();
@@ -69,7 +63,6 @@ function resetSettings() {
   });
 }
 
-// Show status message
 function showStatus(message) {
   const statusMsg = document.getElementById('status-msg');
   statusMsg.textContent = message;
@@ -80,36 +73,40 @@ function showStatus(message) {
   }, 3000);
 }
 
+function highlightHosting(value) {
+  document.getElementById('hosting-cloud-label').style.borderColor = value === 'cloud' ? '#0052cc' : '#dfe1e6';
+  document.getElementById('hosting-onprem-label').style.borderColor = value === 'onprem' ? '#0052cc' : '#dfe1e6';
+}
+
 function highlightWorkflow(value) {
   document.getElementById('workflow-standard-label').style.borderColor = value !== 'new' ? '#0052cc' : '#dfe1e6';
   document.getElementById('workflow-new-label').style.borderColor = value === 'new' ? '#0052cc' : '#dfe1e6';
 }
 
-// Event listeners
 document.getElementById('save-btn').addEventListener('click', saveSettings);
 document.getElementById('reset-btn').addEventListener('click', resetSettings);
+
+document.querySelectorAll('input[name="jiraHosting"]').forEach(radio => {
+  radio.addEventListener('change', () => highlightHosting(radio.value));
+});
 
 document.querySelectorAll('input[name="workflow"]').forEach(radio => {
   radio.addEventListener('change', () => highlightWorkflow(radio.value));
 });
 
-// Sidebar navigation
 document.querySelectorAll('.nav-item').forEach(item => {
   if (!item.classList.contains('analytics-link')) {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const section = e.target.dataset.section;
       
-      // Update active nav item
       document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
       e.target.classList.add('active');
       
-      // Show corresponding section
       document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
       document.getElementById(section + '-section').classList.add('active');
     });
   }
 });
 
-// Load settings on page load
 loadSettings();

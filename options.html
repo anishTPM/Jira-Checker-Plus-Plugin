@@ -21,9 +21,33 @@
     <div class="main-content">
       <div class="section active" id="global-section">
         <h2>🌐 Global JCP Settings</h2>
+        <p class="note">Configure your Jira environment and workflow settings.</p>
+
+        <h3 style="margin-top: 20px; color: #0052cc;">Jira Hosting</h3>
+        <p class="note">Select your Jira environment type. This determines which validation rules and features are available.</p>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 12px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer;" id="hosting-cloud-label">
+            <input type="radio" name="jiraHosting" id="hosting-cloud" value="cloud" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: #172b4d;">Jira Cloud</div>
+              <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">*.atlassian.net</div>
+              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Cloud-hosted Jira with modern UI and API v3.</div>
+            </div>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 12px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer;" id="hosting-onprem-label">
+            <input type="radio" name="jiraHosting" id="hosting-onprem" value="onprem" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: #172b4d;">Jira On-Premise / Data Center</div>
+              <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">Self-hosted Jira</div>
+              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Self-hosted Jira Server or Data Center with API v2.</div>
+            </div>
+          </label>
+        </div>
+
+        <h3 style="margin-top: 24px; color: #0052cc;">Workflow</h3>
         <p class="note">Select the workflow your team follows. This affects validations and available features across the extension.</p>
 
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
           <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer; transition: border-color 0.2s;" id="workflow-standard-label">
             <input type="radio" name="workflow" id="workflow-standard" value="standard" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
             <div>
