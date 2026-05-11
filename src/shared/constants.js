@@ -23,6 +23,7 @@ export const VALIDATION_RULES = {
 export const STATUS_TODO = ['to do', 'backlog', 'open'];
 export const STATUS_IN_PROGRESS = ['in progress', 'progress'];
 
+// On-Prem (API v2) Custom Fields
 export const CUSTOM_FIELDS = {
   FINANCIAL_CATEGORY: 'customfield_10350',
   STORY_POINTS: 'customfield_10006',
@@ -33,6 +34,22 @@ export const CUSTOM_FIELDS = {
   SPRINT_FIELDS: ['sprint', 'customfield_10020', 'customfield_10004']
 };
 
+// Cloud (API v3) Custom Fields
+export const CLOUD_CUSTOM_FIELDS = {
+  FINANCIAL_CATEGORY: 'customfield_10350',
+  STORY_POINTS: 'customfield_10016',
+  STORY_POINTS_ALT: 'customfield_10006',
+  TARGET_START: 'customfield_10015',
+  TARGET_START_ALT: 'customfield_16401',
+  TARGET_END: 'customfield_10016_end',
+  TARGET_END_ALT: 'customfield_16402',
+  EPIC_LINK: 'customfield_10014',
+  EPIC_LINK_ALT: 'customfield_10000',
+  PARENT_LINK: 'parent',
+  PARENT_LINK_ALT: 'customfield_16400',
+  SPRINT: 'customfield_10020'
+};
+
 export const ISSUE_API_FIELDS = [
   'issuetype', 'status', 'assignee', 'priority', 'description',
   'timeoriginalestimate', 'timespent', 'aggregatetimeoriginalestimate',
@@ -40,6 +57,21 @@ export const ISSUE_API_FIELDS = [
   CUSTOM_FIELDS.TARGET_START, CUSTOM_FIELDS.TARGET_END,
   CUSTOM_FIELDS.EPIC_LINK, CUSTOM_FIELDS.PARENT_LINK,
   'fixVersions', ...CUSTOM_FIELDS.SPRINT_FIELDS
+].join(',');
+
+export const CLOUD_API_FIELDS = [
+  'issuetype', 'status', 'assignee', 'priority', 'description',
+  'timeoriginalestimate', 'timespent', 'aggregatetimeoriginalestimate',
+  'parent', 'fixVersions', 'issuelinks',
+  CLOUD_CUSTOM_FIELDS.FINANCIAL_CATEGORY,
+  CLOUD_CUSTOM_FIELDS.STORY_POINTS,
+  CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT,
+  CLOUD_CUSTOM_FIELDS.TARGET_START_ALT,
+  CLOUD_CUSTOM_FIELDS.TARGET_END_ALT,
+  CLOUD_CUSTOM_FIELDS.EPIC_LINK,
+  CLOUD_CUSTOM_FIELDS.EPIC_LINK_ALT,
+  CLOUD_CUSTOM_FIELDS.PARENT_LINK_ALT,
+  CLOUD_CUSTOM_FIELDS.SPRINT
 ].join(',');
 
 export const DEFAULT_SETTINGS = {

@@ -1,5 +1,5 @@
 import { CloudJiraAPI } from './jira-api.js';
-import { CLOUD_CUSTOM_FIELDS } from '../../shared/constants-cloud.js';
+import { CLOUD_CUSTOM_FIELDS } from '../../../shared/constants.js';
 
 let modal = null;
 let storyContext = null;

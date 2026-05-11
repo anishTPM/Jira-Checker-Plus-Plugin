@@ -1,4 +1,4 @@
-import { CLOUD_CUSTOM_FIELDS } from '../../shared/constants-cloud.js';
+import { CLOUD_CUSTOM_FIELDS } from '../../../shared/constants.js';
 
 export const CloudFieldExtractor = {
   issueType: (f) => f.issuetype?.name?.toLowerCase() || '',

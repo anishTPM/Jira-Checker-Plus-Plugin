@@ -1,4 +1,4 @@
-import { VALIDATION_RULES, STATUS_TODO, STATUS_IN_PROGRESS } from '../../shared/constants.js';
+import { VALIDATION_RULES, STATUS_TODO, STATUS_IN_PROGRESS } from '../../../shared/constants.js';
 import { CloudFieldExtractor as F } from '../services/field-extractor.js';
 
 // Each rule: (fields, settings) => string | null

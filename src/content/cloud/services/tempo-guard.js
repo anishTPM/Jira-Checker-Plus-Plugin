@@ -1,6 +1,6 @@
 import { CloudJiraAPI } from './jira-api.js';
 import { CloudValidationEngine } from '../validators/engine.js';
-import { StorageService } from '../../shared/storage.js';
+import { StorageService } from '../../../shared/storage.js';
 
 const BANNER_ID = 'jcp-cloud-tempo-guard-banner';
 const GUARD_ATTR = 'data-jcp-cloud-guarded';

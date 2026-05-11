@@ -1,4 +1,4 @@
-import { VALIDATION_RULES } from '../../shared/constants.js';
+import { VALIDATION_RULES } from '../../../shared/constants.js';
 import { CloudFieldExtractor as F } from '../services/field-extractor.js';
 import { CloudJiraAPI } from '../services/jira-api.js';
 import { cloudRules } from './rules.js';

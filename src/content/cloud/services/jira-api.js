@@ -1,4 +1,4 @@
-import { CLOUD_API_FIELDS } from '../../shared/constants-cloud.js';
+import { CLOUD_API_FIELDS } from '../../../shared/constants.js';
 
 export const CloudJiraAPI = {
   async getIssue(issueKey) {

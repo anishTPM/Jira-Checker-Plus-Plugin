@@ -1,4 +1,4 @@
-import { StorageService } from '../../shared/storage.js';
+import { StorageService } from '../../../shared/storage.js';
 import { CloudFieldExtractor as F } from './field-extractor.js';
 
 export const CloudMetricsTracker = {

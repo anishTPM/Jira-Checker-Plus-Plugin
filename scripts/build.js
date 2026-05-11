@@ -24,8 +24,8 @@ const contentEntries = [
 
 for (const { input, output } of contentEntries) {
   console.log(`Bundling ${output}...`);
-  const bundle = await rollup({ input, plugins: [nodeResolve(), terser()] });
-  await bundle.write({ file: path.join(BUILD, output), format: 'iife' });
+  const bundle = await rollup({ input, plugins: [nodeResolve()] });
+  await bundle.write({ file: path.join(BUILD, output), format: 'es', inlineDynamicImports: true, plugins: [terser()] });
   await bundle.close();
   console.log(`✓ ${output} bundled`);
 }
