@@ -10,22 +10,28 @@ export const CloudJiraAPI = {
 
   async search(jql, fields = CLOUD_API_FIELDS, maxResults = 1000) {
     try {
+      const fieldArray = typeof fields === 'string' ? fields.split(',') : fields;
       const payload = {
         jql,
-        fields: fields.split(','),
+        fields: fieldArray,
         maxResults
       };
-      const r = await fetch('/rest/api/3/search/jql', {
+      
+      // Try POST to /rest/api/3/search first
+      const r = await fetch('/rest/api/3/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
         console.warn('JCP Cloud search error:', err);
         return [];
       }
-      return (await r.json()).issues || [];
+      
+      const data = await r.json();
+      return data.issues || [];
     } catch (e) {
       console.warn('JCP Cloud search exception:', e);
       return [];
@@ -38,15 +44,12 @@ export const CloudJiraAPI = {
   getVersionIssues: (versionId) => CloudJiraAPI.search(`fixVersion=${versionId}`),
 
   getIssueKeyFromURL() {
-    // Cloud URLs: /browse/KEY-123, /jira/software/projects/PROJ/boards/X?selectedIssue=KEY-123
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
 
-    // Check selectedIssue query param first (board/backlog views)
     const selected = params.get('selectedIssue');
     if (selected && /^[A-Z]+-\d+$/.test(selected)) return selected;
 
-    // Check URL path
     const m = path.match(/([A-Z][A-Z0-9]+-\d+)/);
     return m ? m[1] : null;
   },
@@ -77,7 +80,6 @@ export const CloudJiraAPI = {
       const from = monday.toISOString().split('T')[0];
       const to = friday.toISOString().split('T')[0];
 
-      // Tempo Cloud API
       let url = `/rest/tempo-timesheets/4/worklogs?dateFrom=${from}&dateTo=${to}`;
       if (accountId) url += `&worker=${encodeURIComponent(accountId)}`;
 
