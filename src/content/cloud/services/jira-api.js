@@ -10,10 +10,26 @@ export const CloudJiraAPI = {
 
   async search(jql, fields = CLOUD_API_FIELDS, maxResults = 1000) {
     try {
-      const r = await fetch(`/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${fields}&maxResults=${maxResults}`);
-      if (!r.ok) return [];
+      const payload = {
+        jql,
+        fields: fields.split(','),
+        maxResults
+      };
+      const r = await fetch('/rest/api/3/search/jql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        console.warn('JCP Cloud search error:', err);
+        return [];
+      }
       return (await r.json()).issues || [];
-    } catch { return []; }
+    } catch (e) {
+      console.warn('JCP Cloud search exception:', e);
+      return [];
+    }
   },
 
   getSubtasks: (parentKey) => CloudJiraAPI.search(`parent=${parentKey}`),
