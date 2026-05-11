@@ -6,16 +6,16 @@ export const CloudUIManager = {
   createButton(issues, onRescan) {
     if (validationButton) validationButton.remove();
 
-    // Cloud Jira: find the correct header actions container
-    const headerActions = document.querySelector('#jira-issue-header-actions');
-    if (!headerActions) {
+    // Cloud Jira: find the action items group
+    const actionGroup = document.querySelector('[role="group"][aria-label="Action items"]');
+    if (!actionGroup) {
       this._createFloatingButton(issues, onRescan);
       return;
     }
 
     validationButton = document.createElement('div');
     validationButton.id = 'jcp-cloud-btn-wrap';
-    validationButton.style.cssText = 'display:inline-flex;align-items:center;margin-right:8px;';
+    validationButton.style.cssText = 'display:inline-flex;align-items:center;';
 
     const hasErrors = issues.length > 0;
     const cls = hasErrors ? 'jcp-btn-error' : 'jcp-btn-success';
@@ -23,7 +23,7 @@ export const CloudUIManager = {
     const text = hasErrors ? `${issues.length}` : 'JCP: OK';
 
     validationButton.innerHTML = `<button class="jcp-cloud-btn ${cls}" id="jcp-toolbar-btn" style="padding:8px 12px;background:#f4f5f7;color:#42526e;border:1px solid #dfe1e6;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><span class="jcp-btn-icon">${icon}</span><span class="jcp-btn-text">${text}</span></button>`;
-    headerActions.insertBefore(validationButton, headerActions.firstChild);
+    actionGroup.insertBefore(validationButton, actionGroup.firstChild);
 
     validationButton.querySelector('#jcp-toolbar-btn').addEventListener('click', () => {
       hasErrors ? this.togglePanel(issues) : onRescan();

@@ -411,15 +411,15 @@ export const CloudBulkTaskCreator = {
     document.getElementById('jcp-cloud-bulk-btn-wrap')?.remove();
     if (!issueType.includes('story')) return;
 
-    const headerActions = document.querySelector('#jira-issue-header-actions');
-    if (!headerActions) return;
+    const actionGroup = document.querySelector('[role="group"][aria-label="Action items"]');
+    if (!actionGroup) return;
 
     const wrap = document.createElement('div');
     wrap.id = 'jcp-cloud-bulk-btn-wrap';
-    wrap.style.cssText = 'display:inline-flex;align-items:center;margin-right:8px;';
+    wrap.style.cssText = 'display:inline-flex;align-items:center;';
     wrap.innerHTML = `<button id="jcp-cloud-bulk-trigger" style="padding:8px 12px;background:#f4f5f7;color:#42526e;border:1px solid #dfe1e6;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">➕ Add Tasks</button>`;
 
-    headerActions.insertBefore(wrap, headerActions.firstChild);
+    actionGroup.insertBefore(wrap, actionGroup.firstChild);
     wrap.querySelector('#jcp-cloud-bulk-trigger').addEventListener('click', () => this.open(issueKey, fields));
   }
 };
