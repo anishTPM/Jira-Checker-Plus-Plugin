@@ -184,13 +184,18 @@ async function checkDialog(dialog) {
   const issueKey = findIssueKeyInDialog(dialog);
   if (!issueKey) return;
 
-  // Avoid re-checking same issue on same dialog
   const cacheKey = `${issueKey}-${dialog.id || ''}`;
   if (dialog.getAttribute('data-jcp-checked') === cacheKey) return;
   dialog.setAttribute('data-jcp-checked', 'processing');
 
   try {
     const settings = await StorageService.loadSettings();
+
+    // Guard disabled — do nothing
+    if (!settings.tempoGuardEnabled) {
+      dialog.removeAttribute('data-jcp-checked');
+      return;
+    }
 
     // Use cache to avoid repeated API calls
     let errors;

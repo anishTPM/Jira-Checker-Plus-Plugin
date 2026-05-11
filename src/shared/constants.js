@@ -44,9 +44,10 @@ export const ISSUE_API_FIELDS = [
 
 export const DEFAULT_SETTINGS = {
   workflow: 'new',
+  tempoGuardEnabled: false,
   descSubtask: false,
   descEpic: false,
-  descTask: true,
+  descTask: false,
   assigneeEpic: false,
   priorityEpic: false,
   weeklyHours: 40,

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jira Checker Plus",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Validates Jira issues and highlights missing or inconsistent information",
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["*://*.atlassian.net/*", "*://*/jira/*", "*://*/browse/*", "*://*/wiki/*", "*://confluence.tenerity.com/*"],

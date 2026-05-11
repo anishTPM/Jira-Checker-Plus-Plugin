@@ -1,9 +1,10 @@
 // Default settings
 const DEFAULT_SETTINGS = {
   workflow: 'new',
+  tempoGuardEnabled: false,
   descSubtask: false,
   descEpic: false,
-  descTask: true,
+  descTask: false,
   assigneeEpic: false,
   priorityEpic: false,
   weeklyHours: 40,
@@ -17,6 +18,7 @@ function loadSettings() {
     document.getElementById('workflow-standard').checked = settings.workflow !== 'new';
     document.getElementById('workflow-new').checked = settings.workflow === 'new';
     highlightWorkflow(settings.workflow || 'standard');
+    document.getElementById('tempo-guard-enabled').checked = settings.tempoGuardEnabled || false;
     document.getElementById('desc-subtask').checked = settings.descSubtask;
     document.getElementById('desc-epic').checked = settings.descEpic;
     document.getElementById('desc-task').checked = settings.descTask;
@@ -33,6 +35,7 @@ function saveSettings() {
   const workflow = document.querySelector('input[name="workflow"]:checked')?.value || 'standard';
   const newSettings = {
     workflow,
+    tempoGuardEnabled: document.getElementById('tempo-guard-enabled').checked,
     descSubtask: document.getElementById('desc-subtask').checked,
     descEpic: document.getElementById('desc-epic').checked,
     descTask: document.getElementById('desc-task').checked,

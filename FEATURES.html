@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jira Checker Plus — Features v2.2.0</title>
+  <title>Jira Checker Plus — Features v2.3.0</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #172b4d; }
@@ -75,7 +75,7 @@
     <h1>⚡ Jira Checker Plus</h1>
     <p>A Chrome/Edge extension that validates Jira issues, enforces team standards, and boosts productivity — automatically.</p>
     <div>
-      <span class="badge">v2.2.0</span>
+      <span class="badge">v2.3.0</span>
       <span class="badge">Chrome & Edge</span>
       <span class="badge">Jira Cloud & Server</span>
     </div>
@@ -112,6 +112,14 @@
         <div class="feature-card">
           <h3>🏃 Per-row Sprint Selection</h3>
           <p>Select a project board in the Bulk Task Creator to load active and future sprints. Each task row has its own sprint dropdown — assign tasks to different sprints independently.</p>
+        </div>
+        <div class="feature-card green">
+          <h3>📥 CSV Import / Export</h3>
+          <p>Download a sample CSV template, fill in task details offline, and import back into the Bulk Task Creator. Sprint and Financial Category are matched by name — unmatched values default to blank or self.</p>
+        </div>
+        <div class="feature-card">
+          <h3>💾 Board Preference</h3>
+          <p>The selected sprint board is remembered per project. Next time you open Add Tasks, the board is auto-selected and sprints are loaded automatically.</p>
         </div>
         <div class="feature-card">
           <h3>🔗 Hierarchy Validation</h3>
@@ -199,9 +207,10 @@
         <div class="step"><div class="num">1</div><p>Open any Story page and click <strong>"➕ Add Tasks"</strong> in the toolbar</p></div>
         <div class="step"><div class="num">2</div><p>Modal loads with Story, Epic, Program, and Sprint context auto-filled</p></div>
         <div class="step"><div class="num">3</div><p>Fill in Task details — Title, Description, Estimate, Financial Category, Assignee</p></div>
-        <div class="step"><div class="num">4</div><p>Select a <strong>Board</strong> to load sprints. Assign each task to an active or future sprint</p></div>
-        <div class="step"><div class="num">5</div><p>Click <strong>"+  Add Task"</strong> to add more rows. Fields copy from previous row</p></div>
-        <div class="step"><div class="num">6</div><p>Click <strong>"Create All"</strong> — Tasks are created, linked to Story, Epic set, and added to Sprint</p></div>
+        <div class="step"><div class="num">4</div><p>Select a <strong>Board</strong> to load sprints. Board is remembered for next time</p></div>
+        <div class="step"><div class="num">5</div><p>Optionally click <strong>⬇️ Sample CSV</strong> to download a template, fill it, then <strong>📥 Import CSV</strong></p></div>
+        <div class="step"><div class="num">6</div><p>Click <strong>"+ Add Task"</strong> to add more rows. Fields copy from previous row</p></div>
+        <div class="step"><div class="num">7</div><p>Click <strong>"Create All"</strong> — Tasks created, linked to Story, Epic set, added to Sprint</p></div>
       </div>
     </div>
 
@@ -220,7 +229,7 @@
   </div>
 
   <footer>
-    <p>Jira Checker Plus v2.2.0 &nbsp;|&nbsp; Created by <a href="https://github.com/anishTPM" target="_blank">Anish Shah</a> &nbsp;|&nbsp; <a href="https://github.com/anishTPM/Jira-Checker-Plus-Plugin" target="_blank">GitHub</a> &nbsp;|&nbsp; MIT License</p>
+    <p>Jira Checker Plus v2.3.0 &nbsp;|&nbsp; Created by <a href="https://github.com/anishTPM" target="_blank">Anish Shah</a> &nbsp;|&nbsp; <a href="https://github.com/anishTPM/Jira-Checker-Plus-Plugin" target="_blank">GitHub</a> &nbsp;|&nbsp; MIT License</p>
   </footer>
 
 </body>

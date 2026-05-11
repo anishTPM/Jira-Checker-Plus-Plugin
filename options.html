@@ -42,6 +42,13 @@
             </div>
           </label>
         </div>
+
+        <h3 style="margin-top: 24px; color: #0052cc;">Time Log Restriction</h3>
+        <p class="note">When enabled, the extension will block time logging on Jira issues that have pending validation errors.</p>
+        <label class="checkbox-label" style="margin-top: 8px; opacity: 0.5; cursor: not-allowed;">
+          <input type="checkbox" id="tempo-guard-enabled" disabled>
+          <span>Enable Time Log Restriction (blocks logging on issues with validation errors) &nbsp;<span style="background:#0052cc;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;vertical-align:middle">Future Release</span></span>
+        </label>
       </div>
 
       <div class="section" id="optional-section">
@@ -132,6 +139,8 @@
               <li>🟢 Story beyond NEW must have linked Tasks ("Is a Child of")</li>
               <li>🟢 Story should be closed when all linked Tasks are Done</li>
               <li>🔵 Story/Task/Bug in progress must be assigned to a Sprint (except Blocked)</li>
+              <li>🟢 Task/Bug in progress must be assigned to a Sprint (except Blocked)</li>
+              <li>🟢 Story must NOT be assigned to a Sprint (Tasks handle sprint assignment)</li>
             </ul>
 
             <h3 style="margin-top: 20px; color: #0052cc;">Version & Release</h3>

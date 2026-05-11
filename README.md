@@ -2,7 +2,7 @@
 
 A Chrome/Edge browser extension that validates Jira issues, highlights missing or inconsistent information, and provides productivity tools for Jira teams.
 
-> **Version 2.2.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
+> **Version 2.3.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
 
 ---
 
@@ -16,6 +16,7 @@ A Chrome/Edge browser extension that validates Jira issues, highlights missing o
 - 🏃 **Per-row Sprint Selection** — Board dropdown + active/future sprint picker per Task
 - 🚫 **Tempo Log Guard** — Blocks time logging on issues with pending validations
 - ✅ **Mandatory Field Validation** — All Bulk Task Creator fields enforced before creation
+- 📥 **CSV Import/Export** — Import tasks from CSV, download sample template, board preference saved per project
 
 ---
 
@@ -75,6 +76,8 @@ Available on Story pages when **New Workflow** is selected. Click **"➕ Add Tas
 - **Board dropdown** in modal header — select any project board
 - **Per-row Sprint dropdown** — active 🟢 and future 🔵 sprints loaded from selected board
 - Optionally adds Tasks to selected sprint per row
+- **CSV Import** — import tasks from CSV file, download sample template
+- **Board preference** — selected board remembered per project
 
 ### 🌐 Global JCP Settings
 

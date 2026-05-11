@@ -144,11 +144,20 @@ export const rules = [
   },
 
   // ── COMMON: In Progress but no Sprint ────────────────────────────────────
-  (fields) => {
+  (fields, settings) => {
     const type = F.issueType(fields);
     if (F.isType(fields, 'sub')) return null;
-    if (!type.includes('story') && !type.includes('task') && !type.includes('bug')) return null;
     const s = F.status(fields);
+    const isStory = type.includes('story');
+
+    // New Workflow: Story must NOT be in a sprint
+    if (settings.workflow === 'new' && isStory) {
+      if (F.sprint(fields)) return 'Story should not be assigned to a Sprint in New Workflow (assign Tasks to Sprints instead)';
+      return null;
+    }
+
+    // Standard + New Workflow: Task/Bug in progress must have a sprint
+    if (!type.includes('story') && !type.includes('task') && !type.includes('bug')) return null;
     if (F.statusCategory(fields) !== 'indeterminate' || F.sprint(fields) || s.includes('blocked') ||
         s.includes('new') || s.includes('defined')) return null;
     return VALIDATION_RULES.IN_PROGRESS_NO_SPRINT;

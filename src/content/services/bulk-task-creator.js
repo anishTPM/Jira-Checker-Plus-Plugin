@@ -13,8 +13,24 @@ let currentUser = null;
 // ============================================================================
 // API HELPERS
 // ============================================================================
-async function fetchStoryContext(issueKey, fields) {
+async function fetchStoryContext(issueKey, fields, isEpicPage = false) {
   const project = issueKey.split('-')[0];
+  if (isEpicPage) {
+    // On Epic page: epic IS the current issue, fetch its program
+    let programName = null;
+    try {
+      const er = await fetch(`/rest/api/2/issue/${issueKey}?fields=summary,customfield_16400,parent`);
+      if (er.ok) {
+        const ed = await er.json();
+        const programKey = ed.fields.customfield_16400 || ed.fields.parent?.key || null;
+        if (programKey) {
+          const pr = await fetch(`/rest/api/2/issue/${programKey}?fields=summary`);
+          if (pr.ok) programName = (await pr.json()).fields.summary || programKey;
+        }
+      }
+    } catch {}
+    return { key: issueKey, summary: fields.summary || '', project, epicKey: issueKey, epicName: fields.summary || issueKey, programName, financialCategory: fields["customfield_10350"] || null, sprintId: null, sprintName: null, isEpicPage: true };
+  }
 
   try {
     // Fetch story with all possible epic link fields
@@ -101,11 +117,72 @@ async function fetchStoryContext(issueKey, fields) {
 
 async function fetchProjectMembers(projectKey) {
   if (cachedMembers) return cachedMembers;
+
+  const seen = new Set();
+  const allUsers = [];
+
+  const addUsers = (users) => {
+    (users || []).forEach(u => {
+      const key = u.accountId || u.name;
+      if (key && !seen.has(key)) { seen.add(key); allUsers.push(u); }
+    });
+  };
+
+  const fetchPage = async (url) => {
+    const results = [];
+    let startAt = 0;
+    while (true) {
+      try {
+        const sep = url.includes('?') ? '&' : '?';
+        const r = await fetch(`${url}${sep}maxResults=200&startAt=${startAt}`);
+        if (!r.ok) break;
+        const page = await r.json();
+        const items = Array.isArray(page) ? page : (page.values || page.users || []);
+        if (!items.length) break;
+        results.push(...items);
+        if (items.length < 200) break;
+        startAt += 200;
+      } catch { break; }
+    }
+    return results;
+  };
+
+  // 1. Project assignable users
+  addUsers(await fetchPage(`/rest/api/2/user/assignable/search?project=${projectKey}`));
+
+  // 2. All active users (Jira Server: username=. returns all)
+  addUsers(await fetchPage(`/rest/api/2/user/search?username=.`));
+
+  // 3. Broader user search
+  addUsers(await fetchPage(`/rest/api/2/user/search?query=`));
+
+  // 4. Project role actors
   try {
-    const r = await fetch(`/rest/api/2/user/assignable/search?project=${projectKey}&maxResults=200`);
-    if (r.ok) { cachedMembers = await r.json(); return cachedMembers; }
+    const rolesRes = await fetch(`/rest/api/2/project/${projectKey}/role`);
+    if (rolesRes.ok) {
+      const roles = await rolesRes.json();
+      for (const roleUrl of Object.values(roles).slice(0, 10)) {
+        try {
+          const rr = await fetch(roleUrl);
+          if (!rr.ok) continue;
+          const role = await rr.json();
+          (role.actors || []).forEach(actor => {
+            if (actor.type === 'atlassian-user-role-actor') {
+              const key = actor.actorUser?.accountId || actor.name;
+              if (key && !seen.has(key)) {
+                seen.add(key);
+                allUsers.push({ name: actor.name, displayName: actor.displayName, accountId: actor.actorUser?.accountId, avatarUrls: {} });
+              }
+            }
+          });
+        } catch {}
+      }
+    }
   } catch {}
-  return [];
+
+  cachedMembers = allUsers.filter(u => u.displayName && u.active !== false);
+  console.log('JCP Bulk: Total assignable users:', cachedMembers.length, cachedMembers.map(u => u.displayName));
+  return cachedMembers;
 }
 
 async function fetchCurrentUser() {
@@ -242,20 +319,20 @@ async function createTask(row, ctx) {
   // Note: customfield_15401 is not on create screen, set separately
   const deliverableLink = `${ctx.key} - ${ctx.summary}`;
 
-  // Build payload with story link in update block
+  // Build payload — link to Story only if not on Epic page
   const payload = { fields };
-  const linkType = await fetchLinkType();
-  if (linkType) {
-    // We want Story "is parent of" Task
-    // In update block on the NEW issue (Task): inwardIssue = Story (the parent)
-    payload.update = {
-      issuelinks: [{
-        add: {
-          type: { name: linkType.name },
-          inwardIssue: { key: ctx.key }
-        }
-      }]
-    };
+  if (!ctx.isEpicPage) {
+    const linkType = await fetchLinkType();
+    if (linkType) {
+      payload.update = {
+        issuelinks: [{
+          add: {
+            type: { name: linkType.name },
+            inwardIssue: { key: ctx.key }
+          }
+        }]
+      };
+    }
   }
 
   console.log('JCP Bulk: Payload:', JSON.stringify(payload, null, 2));
@@ -425,7 +502,7 @@ function buildRow(index, members, finCategories, ctx, defaults = {}, sprints = [
 
   div.innerHTML = `
     <input type="text" placeholder="Task title *" data-field="title" required>
-    <textarea placeholder="Description *" rows="1" data-field="description" required></textarea>
+    <textarea placeholder="Description (optional)" rows="1" data-field="description"></textarea>
     <input type="text" placeholder="e.g. 2h, 1d *" data-field="estimate" required>
     <input type="text" placeholder="Remaining *" data-field="remaining" required>
     <select data-field="financialCategory" required>
@@ -513,8 +590,100 @@ function markError(row, selector, title) {
 }
 
 // ============================================================================
-// PUBLIC API
+// CSV HELPERS
 // ============================================================================
+function downloadSampleCSV(finCategories, sprints) {
+  const rows = [
+    ['Title', 'Description', 'Estimate', 'Financial Category', 'Assignee', 'Sprint'],
+    ['Implement login page', 'Create the login UI with validation', '4h', 'Build-CapEx', 'john.doe', ''],
+    ['Write unit tests', 'Cover all edge cases for auth module', '2h', 'Testing-CapEx', 'jane.smith', ''],
+  ];
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'jcp-tasks-template.csv';
+  a.click();
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  // Parse header
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+  return lines.slice(1).map(line => {
+    // Handle quoted fields with commas inside
+    const values = [];
+    let current = '', inQuote = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === ',' && !inQuote) { values.push(current.trim()); current = ''; }
+      else { current += ch; }
+    }
+    values.push(current.trim());
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values[i] || ''; });
+    return row;
+  }).filter(r => r.title || r['title']);
+}
+
+function importCSVRows(csvRows, members, finCategories, sprints, rowsContainer, selfDefaults) {
+  // Clear existing rows
+  rowsContainer.innerHTML = '';
+  let imported = 0;
+  csvRows.forEach((csvRow, i) => {
+    const title = csvRow['title'] || '';
+    if (!title) return;
+
+    // Match financial category by name (case-insensitive)
+    const fcName = (csvRow['financial category'] || '').toLowerCase();
+    const fc = finCategories.find(f => (f.value || f.name || '').toLowerCase() === fcName);
+
+    // Match assignee by displayName or username
+    const assigneeName = csvRow['assignee'] || '';
+    const member = members.find(m =>
+      m.displayName?.toLowerCase() === assigneeName.toLowerCase() ||
+      m.name?.toLowerCase() === assigneeName.toLowerCase() ||
+      m.emailAddress?.toLowerCase() === assigneeName.toLowerCase()
+    );
+
+    // Match sprint by name (case-insensitive) — blank if not found
+    const sprintName = (csvRow['sprint'] || '').toLowerCase();
+    const sprint = sprints.find(s => s.name?.toLowerCase() === sprintName);
+
+    const defaults = {
+      financialCategory: fc?.id || selfDefaults.financialCategory,
+      assignee: member?.name || member?.accountId || selfDefaults.assignee,
+      assigneeDisplay: member ? member.displayName : selfDefaults.assigneeDisplay,
+      sprintId: sprint?.id || '',
+    };
+
+    const row = buildRow(i, members, finCategories, storyContext, defaults, sprints);
+    row.querySelector('[data-field="title"]').value = title;
+    row.querySelector('[data-field="description"]').value = csvRow['description'] || '';
+    const est = csvRow['estimate'] || '';
+    row.querySelector('[data-field="estimate"]').value = est;
+    row.querySelector('[data-field="remaining"]').value = est;
+    if (est) row.querySelector('[data-field="remaining"]').dataset.touched = '1';
+    rowsContainer.appendChild(row);
+    imported++;
+  });
+  return imported;
+}
+
+function saveBoardPref(projectKey, boardId) {
+  try { chrome.storage.local.set({ ['jcpBoardPref_' + projectKey]: boardId }); } catch {}
+}
+
+function loadBoardPref(projectKey) {
+  return new Promise(resolve => {
+    try {
+      chrome.storage.local.get(['jcpBoardPref_' + projectKey], r => {
+        resolve(r['jcpBoardPref_' + projectKey] || null);
+      });
+    } catch { resolve(null); }
+  });
+}
+
 export const BulkTaskCreator = {
   async open(issueKey, fields) {
     injectStyles();
@@ -523,7 +692,8 @@ export const BulkTaskCreator = {
     canManageSprints = false;
 
     const issueType = fields.issuetype?.name?.toLowerCase() || '';
-    if (!issueType.includes('story')) return;
+    const isEpicPage = issueType.includes('epic');
+    if (!issueType.includes('story') && !isEpicPage) return;
 
     // Show loading modal immediately
     if (modal) modal.remove();
@@ -532,7 +702,7 @@ export const BulkTaskCreator = {
     modal.innerHTML = `
       <div class="jcp-bulk-dialog">
         <div class="jcp-bulk-header">
-          <h2>➕ Bulk Create Tasks for ${issueKey}</h2>
+          <h2>➕ ${isEpicPage ? 'Add Tasks to Epic' : 'Bulk Create Tasks for'} ${issueKey}</h2>
           <button class="jcp-bulk-close">×</button>
         </div>
         <div class="jcp-bulk-body">
@@ -548,7 +718,7 @@ export const BulkTaskCreator = {
     modal.addEventListener('click', (e) => { if (e.target === modal) this.close(); });
 
     // Fetch all data in parallel
-    storyContext = await fetchStoryContext(issueKey, fields);
+    storyContext = await fetchStoryContext(issueKey, fields, isEpicPage);
     const [members, finCategories, me, sprintData, boards] = await Promise.all([
       fetchProjectMembers(storyContext.project),
       fetchFinancialCategories(),
@@ -558,6 +728,7 @@ export const BulkTaskCreator = {
     ]);
     let sprints = sprintData.sprints;
     await fetchLinkType();
+    const savedBoardId = await loadBoardPref(storyContext.project);
 
     // Default assignee = current user
     const selfDefaults = {
@@ -569,9 +740,9 @@ export const BulkTaskCreator = {
     // Replace loading with actual form
     const body = modal.querySelector('.jcp-bulk-body');
 
-    // Block if Epic or Program missing
-    const missingEpic = !storyContext.epicKey;
-    const missingProgram = !storyContext.programName;
+    // Block if Epic or Program missing (skip for Epic pages)
+    const missingEpic = !storyContext.isEpicPage && !storyContext.epicKey;
+    const missingProgram = !storyContext.isEpicPage && !storyContext.programName;
     const blockErrors = [];
     if (missingEpic) blockErrors.push('⚠️ This Story has no <strong>Epic Link</strong>. Please link an Epic before creating Tasks.');
     if (missingProgram) blockErrors.push('⚠️ The linked Epic has no <strong>Program (Parent Link)</strong>. Please link a Program to the Epic before creating Tasks.');
@@ -598,7 +769,7 @@ export const BulkTaskCreator = {
 
     body.innerHTML = `
       <div class="jcp-bulk-meta">
-        <span>📋 Story: <strong>${issueKey}</strong></span>
+        <span>📋 Story: <strong>${isEpicPage ? 'N/A' : issueKey}</strong></span>
         <span>🏷️ Epic: <strong>${storyContext.epicKey}</strong>${storyContext.epicName ? ` — ${storyContext.epicName}` : ''}</span>
         ${storyContext.programName ? `<span>📁 Program: <strong>${storyContext.programName}</strong></span>` : ''}
         ${storyContext.sprintName ? `<span>🏃 Sprint: <strong>${storyContext.sprintName}</strong></span>` : ''}
@@ -607,7 +778,7 @@ export const BulkTaskCreator = {
           📌 Board:
           <select id="jcp-board-select" style="font-size:12px;padding:3px 6px;border:1px solid #dfe1e6;border-radius:4px;color:#172b4d">
             <option value="">-- Select Board --</option>
-            ${boards.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+            ${boards.map(b => `<option value="${b.id}" ${b.id == savedBoardId ? 'selected' : ''}>${b.name}</option>`).join('')}
           </select>
         </span>` : ''}
       </div>
@@ -615,7 +786,12 @@ export const BulkTaskCreator = {
         <span>Title *</span><span>Description *</span><span>Estimate *</span><span>Remaining *</span><span>Financial Cat. *</span><span>Assignee *</span>${canManageSprints && boards.length ? '<span>Sprint</span>' : ''}<span></span>
       </div>
       <div id="jcp-bulk-rows"></div>
-      <button class="jcp-bulk-btn jcp-bulk-btn-secondary" id="jcp-bulk-add-row" style="margin-top:8px">+ Add Task</button>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="jcp-bulk-btn jcp-bulk-btn-secondary" id="jcp-bulk-add-row">+ Add Task</button>
+        <button class="jcp-bulk-btn jcp-bulk-btn-secondary" id="jcp-bulk-import-csv" title="Import tasks from CSV">📥 Import CSV</button>
+        <button class="jcp-bulk-btn jcp-bulk-btn-secondary" id="jcp-bulk-download-csv" title="Download sample CSV template">⬇️ Sample CSV</button>
+        <input type="file" id="jcp-csv-file" accept=".csv" style="display:none">
+      </div>
       <div class="jcp-bulk-status" id="jcp-bulk-status"></div>
     `;
 
@@ -640,8 +816,30 @@ export const BulkTaskCreator = {
     // Board dropdown handler — reload sprints and rebuild rows
     const boardSelect = modal.querySelector('#jcp-board-select');
     if (boardSelect) {
+      // Auto-load sprints for saved board preference
+      if (savedBoardId && boardSelect.value == savedBoardId) {
+        boardSelect.disabled = true;
+        sprints = await fetchSprintsForBoard(savedBoardId);
+        boardSelect.disabled = false;
+        const existingRows = rowsContainer.querySelectorAll('.jcp-bulk-row');
+        existingRows.forEach((row, i) => {
+          const data = getRowData(row);
+          const newRow = buildRow(i, members, finCategories, storyContext, {
+            financialCategory: data.financialCategory,
+            assignee: data.assignee,
+            assigneeDisplay: row.querySelector('[data-field="assigneeSearch"]').value,
+            sprintId: data.sprintId,
+          }, sprints);
+          newRow.querySelector('[data-field="title"]').value = data.title;
+          newRow.querySelector('[data-field="description"]').value = data.description;
+          newRow.querySelector('[data-field="estimate"]').value = data.estimate;
+          newRow.querySelector('[data-field="remaining"]').value = data.remaining;
+          row.replaceWith(newRow);
+        });
+      }
       boardSelect.addEventListener('change', async () => {
         const boardId = boardSelect.value;
+        if (boardId) saveBoardPref(storyContext.project, boardId);
         if (!boardId) { sprints = []; }
         else {
           boardSelect.disabled = true;
@@ -678,6 +876,24 @@ export const BulkTaskCreator = {
       });
     }
 
+    // CSV import/export handlers
+    modal.querySelector('#jcp-bulk-download-csv')?.addEventListener('click', () => downloadSampleCSV(finCategories, sprints));
+    modal.querySelector('#jcp-bulk-import-csv')?.addEventListener('click', () => modal.querySelector('#jcp-csv-file').click());
+    modal.querySelector('#jcp-csv-file')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const csvRows = parseCSV(ev.target.result);
+        const count = importCSVRows(csvRows, members, finCategories, sprints, rowsContainer, selfDefaults);
+        const statusEl = modal.querySelector('#jcp-bulk-status');
+        statusEl.className = count > 0 ? 'jcp-bulk-status success' : 'jcp-bulk-status error';
+        statusEl.textContent = count > 0 ? `✓ Imported ${count} task${count > 1 ? 's' : ''} from CSV` : 'No valid rows found in CSV.';
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
     modal.querySelector('#jcp-bulk-add-row').addEventListener('click', () => {
       const existingRows = rowsContainer.querySelectorAll('.jcp-bulk-row');
       const lastRow = existingRows[existingRows.length - 1];
@@ -703,8 +919,7 @@ export const BulkTaskCreator = {
     for (const row of rows) {
       const data = getRowData(row);
       if (!data.title) { markError(row, '[data-field="title"]', 'Title is required'); validationErrors.push('Title missing'); continue; }
-      if (!data.description) { markError(row, '[data-field="description"]', 'Description is required'); validationErrors.push('Description missing'); continue; }
-      if (!data.estimate) { markError(row, '[data-field="estimate"]', 'Estimate is required'); validationErrors.push('Estimate missing'); continue; }
+if (!data.estimate) { markError(row, '[data-field="estimate"]', 'Estimate is required'); validationErrors.push('Estimate missing'); continue; }
       if (!data.remaining) { markError(row, '[data-field="remaining"]', 'Remaining is required'); validationErrors.push('Remaining missing'); continue; }
       if (!data.financialCategory) { markError(row, '[data-field="financialCategory"]', 'Financial Category is required'); validationErrors.push('Financial Category missing'); continue; }
       if (!data.assignee) { markError(row, '[data-field="assigneeSearch"]', 'Assignee is required'); validationErrors.push('Assignee missing'); continue; }
@@ -755,7 +970,7 @@ export const BulkTaskCreator = {
       statusEl.textContent = `Created ${created}/${tasks.length}. Errors: ${errors.join('; ')}`;
     } else {
       statusEl.className = 'jcp-bulk-status success';
-      statusEl.textContent = `✓ All ${created} tasks created and linked to ${storyContext.key}!`;
+      statusEl.textContent = storyContext.isEpicPage ? `✓ All ${created} tasks created under Epic ${storyContext.key}!` : `✓ All ${created} tasks created and linked to ${storyContext.key}!`;
       setTimeout(() => this.close(), 2000);
     }
   },
@@ -767,7 +982,8 @@ export const BulkTaskCreator = {
   addButton(issueKey, fields) {
     const issueType = fields.issuetype?.name?.toLowerCase() || '';
     document.getElementById('jcp-bulk-btn-wrap')?.remove();
-    if (!issueType.includes('story') || issueType.includes('sub')) return;
+    if (!issueType.includes('story') && !issueType.includes('epic')) return;
+    if (issueType.includes('sub')) return;
 
     const toolbar = document.querySelector('.aui-toolbar2-secondary');
     if (!toolbar) return;
