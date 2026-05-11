@@ -10,19 +10,22 @@ export const CloudJiraAPI = {
 
   async search(jql, fields = CLOUD_API_FIELDS, maxResults = 1000) {
     try {
-      // Use GET with query parameters - POST is deprecated
+      // Use GET with query parameters
       const fieldStr = typeof fields === 'string' ? fields : fields.join(',');
-      const url = `/rest/api/3/issues/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fieldStr)}&maxResults=${maxResults}`;
+      const url = `/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fieldStr)}&maxResults=${maxResults}`;
+      
+      console.log('JCP Cloud search URL:', url);
       
       const r = await fetch(url);
       
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        console.warn('JCP Cloud search error:', err);
+        console.warn('JCP Cloud search error:', r.status, err);
         return [];
       }
       
       const data = await r.json();
+      console.log('JCP Cloud search result:', data.issues?.length || 0, 'issues');
       return data.issues || [];
     } catch (e) {
       console.warn('JCP Cloud search exception:', e);
