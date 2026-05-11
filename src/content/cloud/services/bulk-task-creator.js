@@ -52,7 +52,6 @@ async function fetchProjectMembers(projectKey) {
     const allUsers = [];
     const seen = new Set();
 
-    // Fetch assignable users via API v3
     const ur = await fetch(`/rest/api/3/users/search?project=${projectKey}&maxResults=200`);
     if (ur.ok) {
       const users = await ur.json();
@@ -412,17 +411,15 @@ export const CloudBulkTaskCreator = {
     document.getElementById('jcp-cloud-bulk-btn-wrap')?.remove();
     if (!issueType.includes('story')) return;
 
+    const headerActions = document.querySelector('[data-testid="jira-issue-header-actions"]');
+    if (!headerActions) return;
+
     const wrap = document.createElement('div');
     wrap.id = 'jcp-cloud-bulk-btn-wrap';
-    wrap.style.cssText = 'display:inline-flex;align-items:center;margin-left:8px;';
-    wrap.innerHTML = `<button id="jcp-cloud-bulk-trigger" style="padding:8px 12px;background:#f4f5f7;color:#42526e;border:1px solid #dfe1e6;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer">➕ Add Tasks</button>`;
+    wrap.style.cssText = 'display:inline-flex;align-items:center;margin-right:8px;';
+    wrap.innerHTML = `<button id="jcp-cloud-bulk-trigger" style="padding:8px 12px;background:#f4f5f7;color:#42526e;border:1px solid #dfe1e6;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">➕ Add Tasks</button>`;
 
-    // Try to find toolbar area
-    const toolbar = document.querySelector('[data-testid="issue-view-foundation.ui.header"]')?.parentElement
-      || document.querySelector('[data-testid="issue.views.issue-base.foundation.breadcrumbs.breadcrumb-current-issue-container"]')?.parentElement
-      || document.body;
-
-    toolbar.appendChild(wrap);
+    headerActions.insertBefore(wrap, headerActions.firstChild);
     wrap.querySelector('#jcp-cloud-bulk-trigger').addEventListener('click', () => this.open(issueKey, fields));
   }
 };
