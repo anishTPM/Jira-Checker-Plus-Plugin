@@ -16,6 +16,8 @@ export const CloudValidationEngine = {
     const status = F.status(fields);
     const statusCategory = F.statusCategory(fields);
 
+    console.log('JCP Cloud validate:', issueKey, 'type:', type, 'status:', status, 'workflow:', settings.workflow);
+
     if (type.includes('epic')) {
       const stories = await CloudJiraAPI.getEpicStories(issueKey);
       for (const s of stories) issues.push(...this.validateFields(s.fields, settings, `[${s.key}] `));
@@ -26,9 +28,12 @@ export const CloudValidationEngine = {
 
       if (isNewWorkflow) {
         // Cloud: get child issues (Tasks) from issue links
+        console.log('JCP Cloud: Checking for linked tasks for', issueKey);
         const linkedTasks = await CloudJiraAPI.getChildIssues(issueKey);
+        console.log('JCP Cloud: Found', linkedTasks.length, 'linked tasks');
 
         if (!status.includes('new') && linkedTasks.length === 0) {
+          console.log('JCP Cloud: Story beyond NEW with no linked tasks - adding error');
           issues.push(VALIDATION_RULES.STORY_NO_SUBTASKS.replace('Sub-tasks', 'linked Tasks'));
         }
 
