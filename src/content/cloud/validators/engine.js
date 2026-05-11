@@ -25,10 +25,8 @@ export const CloudValidationEngine = {
       const isNewWorkflow = settings.workflow === 'new';
 
       if (isNewWorkflow) {
-        // Cloud: find Tasks where parent = this Story
-        const linkedTasks = await CloudJiraAPI.search(
-          `parent = ${issueKey} AND issuetype = Task`, 'issuetype,status'
-        );
+        // Cloud: get child issues (Tasks) from issue links
+        const linkedTasks = await CloudJiraAPI.getChildIssues(issueKey);
 
         if (!status.includes('new') && linkedTasks.length === 0) {
           issues.push(VALIDATION_RULES.STORY_NO_SUBTASKS.replace('Sub-tasks', 'linked Tasks'));

@@ -33,6 +33,30 @@ export const CloudJiraAPI = {
     }
   },
 
+  // Get child issues (Tasks) for a parent (Story)
+  async getChildIssues(parentKey) {
+    try {
+      const parentIssue = await this.getIssue(parentKey);
+      if (!parentIssue || !parentIssue.fields.issuelinks) return [];
+      
+      // Filter for "is parent of" relationships
+      const childLinks = parentIssue.fields.issuelinks.filter(link => 
+        link.type?.outward === 'is parent of' && link.outwardIssue
+      );
+      
+      return childLinks.map(link => ({
+        key: link.outwardIssue.key,
+        fields: {
+          issuetype: link.outwardIssue.fields?.issuetype,
+          status: link.outwardIssue.fields?.status
+        }
+      }));
+    } catch (e) {
+      console.warn('JCP Cloud getChildIssues error:', e);
+      return [];
+    }
+  },
+
   getSubtasks: (parentKey) => CloudJiraAPI.search(`parent=${parentKey}`),
   getLinkedBugs: (issueKey) => CloudJiraAPI.search(`issue in linkedIssues(${issueKey}) AND type=Bug`, 'status'),
   getEpicStories: (epicKey) => CloudJiraAPI.search(`parent=${epicKey} OR "Epic Link"=${epicKey}`),
