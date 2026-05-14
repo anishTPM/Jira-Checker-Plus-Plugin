@@ -30,8 +30,13 @@ export const cloudRules = [
   // Financial Category
   (fields) => {
     const type = F.issueType(fields);
+    const fc = F.financialCategory(fields);
+    console.log('JCP Cloud: Financial Category rule - type:', type, 'fc value:', fc, 'fc truthy:', !!fc);
     if (type.includes('story') || type.includes('task') || type.includes('bug') || type.includes('sub')) {
-      if (!F.financialCategory(fields)) return VALIDATION_RULES.FINANCIAL_CATEGORY_MISSING;
+      if (!fc) {
+        console.log('JCP Cloud: Financial Category MISSING - returning error');
+        return VALIDATION_RULES.FINANCIAL_CATEGORY_MISSING;
+      }
     }
     return null;
   },
@@ -39,8 +44,10 @@ export const cloudRules = [
   // Story Points
   (fields) => {
     const s = F.status(fields);
-    if (F.isType(fields, 'story') && !F.isType(fields, 'sub') &&
-        !s.includes('new') && !s.includes('defined') && !F.storyPoints(fields)) {
+    const type = F.issueType(fields);
+    const isStory = type.includes('story') && !type.includes('sub');
+    const isTask = type.includes('task') && !type.includes('sub');
+    if ((isStory || isTask) && !s.includes('new') && !s.includes('defined') && !F.storyPoints(fields)) {
       return VALIDATION_RULES.STORY_POINTS_MISSING;
     }
     return null;

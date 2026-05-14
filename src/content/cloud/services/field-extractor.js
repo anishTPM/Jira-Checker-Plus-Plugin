@@ -19,11 +19,15 @@ export const CloudFieldExtractor = {
   hasPriority: (f) => !!f.priority,
 
   financialCategory(f) {
-    return f[CLOUD_CUSTOM_FIELDS.FINANCIAL_CATEGORY] || null;
+    const fc = f[CLOUD_CUSTOM_FIELDS.FINANCIAL_CATEGORY];
+    console.log('JCP Cloud: financialCategory check - field:', CLOUD_CUSTOM_FIELDS.FINANCIAL_CATEGORY, 'value:', fc, 'all fields:', Object.keys(f).filter(k => k.includes('customfield')));
+    return fc || null;
   },
 
   storyPoints(f) {
-    return f[CLOUD_CUSTOM_FIELDS.STORY_POINTS] || f[CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT] || null;
+    const sp = f[CLOUD_CUSTOM_FIELDS.STORY_POINTS] || f[CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT] || f[CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT2] || null;
+    console.log('JCP Cloud: storyPoints -', CLOUD_CUSTOM_FIELDS.STORY_POINTS, ':', f[CLOUD_CUSTOM_FIELDS.STORY_POINTS], '|', CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT, ':', f[CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT], '|', CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT2, ':', f[CLOUD_CUSTOM_FIELDS.STORY_POINTS_ALT2], '| result:', sp);
+    return sp;
   },
 
   originalEstimate: (f) => f.timeoriginalestimate,
@@ -52,8 +56,8 @@ export const CloudFieldExtractor = {
 
   sprint(f) {
     const val = f[CLOUD_CUSTOM_FIELDS.SPRINT];
-    if (Array.isArray(val)) return val.find(s => s.state === 'active') || val[0] || null;
-    return val || null;
+    if (Array.isArray(val)) return val.find(s => s.state === 'active' || s.state === 'future') || null;
+    return (val?.state === 'active' || val?.state === 'future') ? val : null;
   },
 
   hasReleasedVersion(f) {

@@ -48,30 +48,24 @@ async function fetchStoryContext(issueKey, fields) {
 async function fetchProjectMembers(projectKey) {
   if (cachedMembers) return cachedMembers;
   try {
-    const r = await CloudJiraAPI.search(`project=${projectKey}`, 'assignee', 1);
-    const allUsers = [];
     const seen = new Set();
-
-    const ur = await fetch(`/rest/api/3/users/search?project=${projectKey}&maxResults=200`);
+    const allUsers = [];
+    // Cloud: use assignable search endpoint
+    const ur = await fetch(`/rest/api/3/user/assignable/search?project=${projectKey}&maxResults=200`);
     if (ur.ok) {
       const users = await ur.json();
       (Array.isArray(users) ? users : []).forEach(u => {
-        const key = u.accountId;
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          allUsers.push({
-            accountId: u.accountId,
-            displayName: u.displayName,
-            emailAddress: u.emailAddress,
-            avatarUrls: u.avatarUrls || {}
-          });
+        if (u.accountId && !seen.has(u.accountId) && u.active !== false) {
+          seen.add(u.accountId);
+          allUsers.push({ accountId: u.accountId, displayName: u.displayName || u.emailAddress });
         }
       });
     }
-
+    console.log('JCP Cloud fetchProjectMembers:', allUsers.length, 'users for', projectKey);
     cachedMembers = allUsers;
     return cachedMembers;
-  } catch {
+  } catch (e) {
+    console.warn('JCP Cloud fetchProjectMembers error:', e);
     return [];
   }
 }
@@ -103,12 +97,14 @@ async function createTask(row, ctx) {
   if (row.description) fields.description = { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ type: 'text', text: row.description }] }] };
   if (row.estimate) fields.timetracking = { originalEstimate: row.estimate, remainingEstimate: row.remaining || row.estimate };
   if (row.financialCategory) fields[CLOUD_CUSTOM_FIELDS.FINANCIAL_CATEGORY] = { id: row.financialCategory };
-  if (row.assignee) fields.assignee = { id: row.assignee };
+  if (row.assignee) fields.assignee = { accountId: row.assignee };
   if (ctx.epicKey) fields[CLOUD_CUSTOM_FIELDS.EPIC_LINK] = ctx.epicKey;
 
   const payload = { fields };
 
-  const r = await fetch('/rest/api/3/issues', {
+  console.log('JCP Cloud createTask payload:', JSON.stringify(payload, null, 2));
+
+  const r = await fetch('/rest/api/3/issue', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -116,10 +112,32 @@ async function createTask(row, ctx) {
 
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
-    throw new Error(err.errorMessages?.join(', ') || `HTTP ${r.status}`);
+    console.error('JCP Cloud createTask error response:', JSON.stringify(err, null, 2));
+    const msg = err.errorMessages?.join(', ') || Object.entries(err.errors || {}).map(([k,v]) => `${k}: ${v}`).join(', ') || `HTTP ${r.status}`;
+    throw new Error(msg);
   }
 
   const created = await r.json();
+
+  // Story is parent (outward), new task is child (inward)
+  const linkPayload = {
+    type: { name: 'multi-level hierarchy [GANTT]' },
+    inwardIssue: { key: ctx.key },
+    outwardIssue: { key: created.key }
+  };
+  console.log('JCP Cloud issueLink payload:', JSON.stringify(linkPayload));
+  const lr = await fetch('/rest/api/3/issueLink', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(linkPayload)
+  });
+  if (!lr.ok) {
+    const lerr = await lr.json().catch(() => ({}));
+    console.error('JCP Cloud issueLink error:', lr.status, JSON.stringify(lerr));
+  } else {
+    console.log('JCP Cloud issueLink success:', created.key, '-> linked to', ctx.key);
+  }
+
   return created.key;
 }
 
@@ -131,40 +149,48 @@ const STYLES = `
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 .jcp-cloud-bulk-dialog {
-  background: #fff; border-radius: 8px; width: 95vw; max-width: 1200px; max-height: 85vh;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25); display: flex; flex-direction: column;
+  background: #fff; border-radius: 10px; width: 92vw; max-width: 1400px; max-height: 88vh;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.22); display: flex; flex-direction: column;
 }
 .jcp-cloud-bulk-header {
-  padding: 16px 20px; border-bottom: 1px solid #dfe1e6;
+  padding: 18px 24px; border-bottom: 1px solid #dfe1e6;
   display: flex; align-items: center; justify-content: space-between;
 }
-.jcp-cloud-bulk-header h2 { margin: 0; font-size: 16px; color: #172b4d; }
-.jcp-cloud-bulk-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #6b778c; padding: 4px 8px; }
-.jcp-cloud-bulk-close:hover { color: #172b4d; }
-.jcp-cloud-bulk-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
-.jcp-cloud-bulk-meta { display: flex; gap: 12px; margin-bottom: 16px; font-size: 12px; color: #5e6c84; flex-wrap: wrap; }
-.jcp-cloud-bulk-meta span { background: #f4f5f7; padding: 5px 12px; border-radius: 4px; }
+.jcp-cloud-bulk-header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #172b4d; }
+.jcp-cloud-bulk-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #6b778c; padding: 4px 8px; border-radius: 4px; }
+.jcp-cloud-bulk-close:hover { background: #f4f5f7; color: #172b4d; }
+.jcp-cloud-bulk-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+.jcp-cloud-bulk-meta { display: flex; gap: 12px; margin-bottom: 18px; font-size: 12px; color: #5e6c84; flex-wrap: wrap; }
+.jcp-cloud-bulk-meta span { background: #f4f5f7; padding: 5px 14px; border-radius: 20px; }
 .jcp-cloud-bulk-row {
-  display: grid; grid-template-columns: 2fr 2fr 100px 100px 140px 140px 32px;
+  display: grid;
+  grid-template-columns: 2fr 2.5fr 90px 90px 1.6fr 1.6fr 36px;
   gap: 10px; margin-bottom: 10px; align-items: start;
 }
-.jcp-cloud-bulk-row-header { font-size: 11px; font-weight: 600; color: #5e6c84; text-transform: uppercase; padding-bottom: 4px; border-bottom: 1px solid #dfe1e6; margin-bottom: 8px; }
+@media (max-width: 900px) {
+  .jcp-cloud-bulk-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .jcp-cloud-bulk-row-header { display: none; }
+}
+.jcp-cloud-bulk-row-header { font-size: 11px; font-weight: 700; color: #5e6c84; text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 6px; border-bottom: 2px solid #dfe1e6; margin-bottom: 6px; }
 .jcp-cloud-bulk-row input, .jcp-cloud-bulk-row textarea, .jcp-cloud-bulk-row select {
-  width: 100%; padding: 8px 10px; border: 1px solid #dfe1e6; border-radius: 4px;
-  font-size: 13px; color: #172b4d; box-sizing: border-box;
+  width: 100%; padding: 9px 12px; border: 1.5px solid #dfe1e6; border-radius: 5px;
+  font-size: 13.5px; color: #172b4d; box-sizing: border-box; background: #fafbfc;
+  transition: border-color 0.15s;
 }
 .jcp-cloud-bulk-row input:focus, .jcp-cloud-bulk-row textarea:focus, .jcp-cloud-bulk-row select:focus {
-  outline: none; border-color: #0052cc;
+  outline: none; border-color: #0052cc; background: #fff;
 }
-.jcp-cloud-bulk-row textarea { resize: vertical; min-height: 36px; }
-.jcp-cloud-bulk-remove { background: none; border: none; cursor: pointer; color: #de350b; font-size: 16px; padding: 6px; }
-.jcp-cloud-bulk-remove:hover { background: #ffebe6; border-radius: 3px; }
+.jcp-cloud-bulk-row textarea { resize: vertical; min-height: 38px; }
+.jcp-cloud-bulk-remove { background: none; border: none; cursor: pointer; color: #de350b; font-size: 18px; padding: 6px; border-radius: 4px; }
+.jcp-cloud-bulk-remove:hover { background: #ffebe6; }
 .jcp-cloud-bulk-footer {
-  padding: 12px 20px; border-top: 1px solid #dfe1e6;
+  padding: 14px 24px; border-top: 1px solid #dfe1e6;
   display: flex; align-items: center; justify-content: space-between;
 }
 .jcp-cloud-bulk-btn {
-  padding: 8px 16px; border: none; border-radius: 4px; font-size: 13px;
+  padding: 9px 20px; border: none; border-radius: 5px; font-size: 14px;
   font-weight: 600; cursor: pointer; transition: background 0.2s;
 }
 .jcp-cloud-bulk-btn-primary { background: #0052cc; color: #fff; }
@@ -172,9 +198,9 @@ const STYLES = `
 .jcp-cloud-bulk-btn-primary:disabled { background: #b3d4ff; cursor: not-allowed; }
 .jcp-cloud-bulk-btn-secondary { background: #f4f5f7; color: #42526e; }
 .jcp-cloud-bulk-btn-secondary:hover { background: #dfe1e6; }
-.jcp-cloud-bulk-status { font-size: 12px; padding: 8px 0; }
-.jcp-cloud-bulk-status.success { color: #36b37e; }
-.jcp-cloud-bulk-status.error { color: #de350b; }
+.jcp-cloud-bulk-status { font-size: 13px; padding: 8px 0; }
+.jcp-cloud-bulk-status.success { color: #36b37e; font-weight: 600; }
+.jcp-cloud-bulk-status.error { color: #de350b; font-weight: 600; }
 `;
 
 function injectStyles() {

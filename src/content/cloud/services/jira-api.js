@@ -39,16 +39,17 @@ export const CloudJiraAPI = {
       const parentIssue = await this.getIssue(parentKey);
       if (!parentIssue || !parentIssue.fields.issuelinks) return [];
       
-      // Filter for "is parent of" relationships
-      const childLinks = parentIssue.fields.issuelinks.filter(link => 
-        link.type?.outward === 'is parent of' && link.outwardIssue
-      );
+      // "Is a Child of/Is a Parent of" — children appear as inwardIssue on the story
+      const childLinks = parentIssue.fields.issuelinks.filter(link => {
+        const inward = link.type?.inward?.toLowerCase() || '';
+        return inward.includes('parent of') && link.inwardIssue;
+      });
       
       return childLinks.map(link => ({
-        key: link.outwardIssue.key,
+        key: link.inwardIssue.key,
         fields: {
-          issuetype: link.outwardIssue.fields?.issuetype,
-          status: link.outwardIssue.fields?.status
+          issuetype: link.inwardIssue.fields?.issuetype,
+          status: link.inwardIssue.fields?.status
         }
       }));
     } catch (e) {
