@@ -31,7 +31,7 @@ try {
 if (fs.existsSync(BUILD)) fs.rmSync(BUILD, { recursive: true });
 fs.mkdirSync(BUILD);
 
-console.log('Building Jira Checker Plus v2.0.0...\n');
+console.log('Building Jira Checker Plus v3.2.0...\n');
 
 // 1. Build content scripts via Rollup (IIFE, self-contained)
 const contentEntries = [
@@ -86,6 +86,16 @@ for (const file of staticFiles) {
 const orgConfigJs = `window.JCP_ORG_CONFIG = ${JSON.stringify(ORG_CONFIG)};`;
 fs.writeFileSync(path.join(BUILD, 'org-config.js'), orgConfigJs);
 console.log('✓ org-config.js written');
+
+// 3c. Inject org guide URL into options.html help icon
+const guideUrl = (ORG_CONFIG.pages || []).find(p => p.label.toLowerCase().includes('guide'))?.url
+  || 'https://app.tempo.io/settings/api-integration';
+const optHtmlPath = path.join(BUILD, 'options.html');
+let optHtml = fs.readFileSync(optHtmlPath, 'utf8');
+optHtml = optHtml.replace('https://app.tempo.io/settings/api-integration', guideUrl);
+optHtml = optHtml.replace('Click to generate your Tempo API token', `View JCP Guide`);
+fs.writeFileSync(optHtmlPath, optHtml);
+console.log(`✓ Guide URL injected: ${guideUrl}`);
 
 // 4. Copy icons
 const iconsDir = path.join(ROOT, 'icons');

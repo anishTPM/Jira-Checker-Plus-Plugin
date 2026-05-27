@@ -174,7 +174,7 @@ document.getElementById('sync-confluence-btn').addEventListener('click', async (
     
     const pageId = pageIdMatch[1];
     
-    // Extract base URL (https://confluence.tenerity.com)
+    // Extract base URL 
     const baseUrlMatch = confluenceUrl.match(/(https?:\/\/[^\/]+)/);
     const baseUrl = baseUrlMatch ? baseUrlMatch[1] : window.location.origin;
     

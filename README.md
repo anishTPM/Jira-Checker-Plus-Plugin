@@ -2,11 +2,23 @@
 
 A Chrome/Edge browser extension that validates Jira issues, highlights missing or inconsistent information, and provides productivity tools for Jira teams.
 
-> **Version 2.3.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
+> **Version 3.2.0** | [GitHub](https://github.com/anishTPM/Jira-Checker-Plus-Plugin) | Created by Anish Shah
 
 ---
 
-## What's New in v2.x
+## What's New in v3.2.0
+
+- ☁️ **Jira Cloud Support** — Full dual-hosting architecture (Cloud + On-Premise)
+- 🔧 **Cloud API Fixes** — Migrated to `/rest/api/3/search/jql` (POST), fixed deprecated endpoints
+- ✅ **Cloud Validation Fixes** — Financial Category, Story Points (Story & Task), sprint history false positives, linked tasks detection
+- ➕ **Epic Item Creator** — Add Stories, Tasks, or Stories & Tasks from Epic page with board/sprint selection
+- 🔗 **Correct Issue Linking** — Tasks linked via `multi-level hierarchy [GANTT]` with correct inward/outward direction
+- ⏰ **Tempo Integration** — Tempo API token support, Friday hour reminders via Tempo Cloud API
+- 🔒 **Org Config System** — `config.org.js` (gitignored) for org-specific URLs, `config.default.js` for public users
+- 🔗 **Integrations Section** — Options page shows pre-configured org pages (locked) or editable fields for public users
+- 🎨 **Improved Modal UI** — Wider bulk creator modals, pill-style type selectors, responsive layouts
+
+## What's New in v3.x
 
 - 🏗️ **SOLID Architecture** — Fully modular codebase with separate services, validators, and shared utilities
 - 🔀 **Dual Workflow Support** — Standard (Story → Sub-tasks) and New Workflow (Story → Tasks)
@@ -16,7 +28,6 @@ A Chrome/Edge browser extension that validates Jira issues, highlights missing o
 - 🏃 **Per-row Sprint Selection** — Board dropdown + active/future sprint picker per Task
 - 🚫 **Tempo Log Guard** — Blocks time logging on issues with pending validations
 - ✅ **Mandatory Field Validation** — All Bulk Task Creator fields enforced before creation
-- 📥 **CSV Import/Export** — Import tasks from CSV, download sample template, board preference saved per project
 
 ---
 
@@ -119,10 +130,11 @@ Right-click the extension icon → **Options**:
 
 | Section | Description |
 |---------|-------------|
-| 🌐 Global JCP Settings | Select Standard or New Workflow |
+| 🌐 Global JCP Settings | Select Standard or New Workflow, Jira hosting type |
 | Optional Validations | Enable optional rules (description for Sub-task/Epic/Task, assignee/priority for Epic) |
-| Tempo Settings | Weekly hours target, reminder messages |
+| Tempo Settings | Tempo API token, weekly hours target, reminder messages |
 | Mandatory Rules | View all enforced rules by workflow |
+| 🔗 Integrations | Org-configured pages (locked) or custom Confluence URL |
 
 ---
 
