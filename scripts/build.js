@@ -4,11 +4,28 @@ import terser from '@rollup/plugin-terser';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const BUILD = path.join(ROOT, 'build');
+
+// Load org config (gitignored) or fall back to default
+let ORG_CONFIG = { locked: false, confluenceBaseUrl: '', pages: [] };
+const orgConfigPath = path.join(ROOT, 'config.org.js');
+const defaultConfigPath = path.join(ROOT, 'config.default.js');
+try {
+  if (fs.existsSync(orgConfigPath)) {
+    const mod = await import(pathToFileURL(orgConfigPath).href);
+    ORG_CONFIG = mod.ORG_CONFIG;
+    console.log('Using org config (config.org.js)');
+  } else if (fs.existsSync(defaultConfigPath)) {
+    const mod = await import(pathToFileURL(defaultConfigPath).href);
+    ORG_CONFIG = mod.ORG_CONFIG;
+  }
+} catch (e) {
+  console.warn('Could not load org config:', e.message);
+}
 
 // Clean & create build dir
 if (fs.existsSync(BUILD)) fs.rmSync(BUILD, { recursive: true });
@@ -64,6 +81,11 @@ for (const file of staticFiles) {
     console.log(`✓ ${file} copied`);
   }
 }
+
+// 3b. Write org config as a JS file into build
+const orgConfigJs = `window.JCP_ORG_CONFIG = ${JSON.stringify(ORG_CONFIG)};`;
+fs.writeFileSync(path.join(BUILD, 'org-config.js'), orgConfigJs);
+console.log('✓ org-config.js written');
 
 // 4. Copy icons
 const iconsDir = path.join(ROOT, 'icons');

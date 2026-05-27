@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>Jira Checker Plus - Settings</title>
   <link rel="stylesheet" href="options.css">
 </head>
+
 <body>
   <div class="container">
     <div class="sidebar">
@@ -14,91 +16,115 @@
         <a href="#" class="nav-item" data-section="optional">Optional Validations</a>
         <a href="#" class="nav-item" data-section="tempo">Tempo Settings</a>
         <a href="#" class="nav-item" data-section="mandatory">Mandatory Rules</a>
+        <a href="#" class="nav-item" data-section="integrations">🔗 Integrations</a>
         <a href="analytics.html" class="nav-item analytics-link">📊 Analytics</a>
       </nav>
     </div>
-    
+
     <div class="main-content">
       <div class="section active" id="global-section">
         <h2>🌐 Global JCP Settings</h2>
         <p class="note">Configure your Jira environment and workflow settings.</p>
 
         <h3 style="margin-top: 20px; color: #0052cc;">Jira Hosting</h3>
-        <p class="note">Select your Jira environment type. This determines which validation rules and features are available.</p>
+        <p class="note">Select your Jira environment type. This determines which validation rules and features are
+          available.</p>
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 12px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer;" id="hosting-cloud-label">
-            <input type="radio" name="jiraHosting" id="hosting-cloud" value="cloud" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+          <label
+            style="display: flex; align-items: flex-start; gap: 14px; padding: 12px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer;"
+            id="hosting-cloud-label">
+            <input type="radio" name="jiraHosting" id="hosting-cloud" value="cloud"
+              style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
             <div>
               <div style="font-size: 14px; font-weight: 600; color: #172b4d;">Jira Cloud</div>
               <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">*.atlassian.net</div>
-              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Cloud-hosted Jira with modern UI and API v3.</div>
+              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Cloud-hosted Jira with modern UI and API
+                v3.</div>
             </div>
           </label>
-          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 12px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer;" id="hosting-onprem-label">
-            <input type="radio" name="jiraHosting" id="hosting-onprem" value="onprem" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+          <label
+            style="display: flex; align-items: flex-start; gap: 14px; padding: 12px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer;"
+            id="hosting-onprem-label">
+            <input type="radio" name="jiraHosting" id="hosting-onprem" value="onprem"
+              style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
             <div>
               <div style="font-size: 14px; font-weight: 600; color: #172b4d;">Jira On-Premise / Data Center</div>
               <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">Self-hosted Jira</div>
-              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Self-hosted Jira Server or Data Center with API v2.</div>
+              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Self-hosted Jira Server or Data Center with
+                API v2.</div>
             </div>
           </label>
         </div>
 
         <h3 style="margin-top: 24px; color: #0052cc;">Workflow</h3>
-        <p class="note">Select the workflow your team follows. This affects validations and available features across the extension.</p>
+        <p class="note">Select the workflow your team follows. This affects validations and available features across
+          the extension.</p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer; transition: border-color 0.2s;" id="workflow-standard-label">
-            <input type="radio" name="workflow" id="workflow-standard" value="standard" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+          <label
+            style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer; transition: border-color 0.2s;"
+            id="workflow-standard-label">
+            <input type="radio" name="workflow" id="workflow-standard" value="standard"
+              style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
             <div>
               <div style="font-size: 14px; font-weight: 600; color: #172b4d;">Standard Jira Workflow</div>
               <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">Story → Sub-tasks</div>
-              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Validates Sub-tasks under Stories. Original Estimate required on Sub-tasks. Time logging allowed on Sub-tasks and Bugs.</div>
+              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Validates Sub-tasks under Stories. Original
+                Estimate required on Sub-tasks. Time logging allowed on Sub-tasks and Bugs.</div>
             </div>
           </label>
 
-          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer; transition: border-color 0.2s;" id="workflow-new-label">
-            <input type="radio" name="workflow" id="workflow-new" value="new" style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+          <label
+            style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #dfe1e6; border-radius: 6px; cursor: pointer; transition: border-color 0.2s;"
+            id="workflow-new-label">
+            <input type="radio" name="workflow" id="workflow-new" value="new"
+              style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
             <div>
               <div style="font-size: 14px; font-weight: 600; color: #172b4d;">New Workflow</div>
-              <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">Story → Tasks (linked via "Is a Child of")</div>
-              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Tasks are created independently and linked to Stories. Enables the Bulk Task Creator button on Story pages. Epic and Program links are validated on Tasks.</div>
+              <div style="font-size: 12px; color: #5e6c84; margin-top: 4px;">Story → Tasks (linked via "Is a Child of")
+              </div>
+              <div style="font-size: 12px; color: #6b778c; margin-top: 6px;">Tasks are created independently and linked
+                to Stories. Enables the Bulk Task Creator button on Story pages. Epic and Program links are validated on
+                Tasks.</div>
             </div>
           </label>
         </div>
 
         <h3 style="margin-top: 24px; color: #0052cc;">Time Log Restriction</h3>
-        <p class="note">When enabled, the extension will block time logging on Jira issues that have pending validation errors.</p>
+        <p class="note">When enabled, the extension will block time logging on Jira issues that have pending validation
+          errors.</p>
         <label class="checkbox-label" style="margin-top: 8px; opacity: 0.5; cursor: not-allowed;">
           <input type="checkbox" id="tempo-guard-enabled" disabled>
-          <span>Enable Time Log Restriction (blocks logging on issues with validation errors) &nbsp;<span style="background:#0052cc;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;vertical-align:middle">Future Release</span></span>
+          <span>Enable Time Log Restriction (blocks logging on issues with validation errors) &nbsp;<span
+              style="background:#0052cc;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;vertical-align:middle">Future
+              Release</span></span>
         </label>
       </div>
 
       <div class="section" id="optional-section">
         <h2>Optional Validations</h2>
         <p class="note">Check to enable these validations</p>
-        
+
         <label class="checkbox-label">
           <input type="checkbox" id="desc-subtask">
           <span>Require description for Sub-task</span>
         </label>
-        
+
         <label class="checkbox-label">
           <input type="checkbox" id="desc-epic">
           <span>Require description for Epic</span>
         </label>
-        
+
         <label class="checkbox-label">
           <input type="checkbox" id="desc-task">
           <span>Require description for Task</span>
         </label>
-        
+
         <label class="checkbox-label">
           <input type="checkbox" id="assignee-epic">
           <span>Require assignee for Epic</span>
         </label>
-        
+
         <label class="checkbox-label">
           <input type="checkbox" id="priority-epic">
           <span>Require priority for Epic</span>
@@ -107,28 +133,42 @@
 
       <div class="section" id="tempo-section">
         <h2>Tempo Timesheet Settings</h2>
-        
+
+        <label class="input-label">
+          <span>Tempo API Token
+            <a href="https://app.tempo.io/settings/api-integration" target="_blank" title="Click to generate your Tempo API token" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#0052cc;color:#fff;border-radius:50%;font-size:10px;font-weight:700;text-decoration:none;margin-left:6px;vertical-align:middle;">?</a>
+          </span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="password" id="tempo-token" placeholder="Paste your Tempo API token here" style="flex:1;">
+            <button type="button" id="check-tempo-hours" class="btn-secondary" style="white-space:nowrap;">Validate Token</button>
+            <span id="tempo-token-status" style="font-size:13px;"></span>
+          </div>
+        </label>
+
         <label class="input-label">
           <span>Weekly Hours Required</span>
           <input type="number" id="weekly-hours" min="1" max="80" value="40">
         </label>
-        
+
         <label class="input-label">
           <span>Friday Warning Message</span>
           <input type="text" id="timelog-message" placeholder="Please log your hours for this week!">
         </label>
-        
+
         <label class="input-label">
           <span>Month-End Timesheet Reminder</span>
           <input type="text" id="timesheet-message" placeholder="Please submit your timesheet for this month!">
         </label>
-        
-        <p class="note">On Fridays, if logged hours are below target, a reminder will appear. On the last working day of the month, a timesheet submission reminder will show if not submitted.</p>
+
+        <p class="note">On Fridays, if logged hours are below target, a reminder will appear. On the last working day
+          of
+          the month, a timesheet submission reminder will show if not submitted.</p>
       </div>
 
       <div class="section" id="mandatory-section">
         <h2>Mandatory Validations</h2>
-        <p class="note">🔵 Both Workflows &nbsp;|&nbsp; 🟡 Standard Only (Story → Sub-tasks) &nbsp;|&nbsp; 🟢 New Workflow Only (Story → Tasks)</p>
+        <p class="note">🔵 Both Workflows &nbsp;|&nbsp; 🟡 Standard Only (Story → Sub-tasks) &nbsp;|&nbsp; 🟢 New
+          Workflow Only (Story → Tasks)</p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
           <div>
@@ -184,6 +224,14 @@
         </div>
       </div>
 
+      <div class="section" id="integrations-section">
+        <h2>🔗 Integrations</h2>
+        <p class="note">Configure external integrations. These settings are stored locally and never shared.</p>
+        <div id="integrations-content">
+          <!-- Populated by options.js based on org config -->
+        </div>
+      </div>
+
       <div class="actions">
         <button id="save-btn">Save Settings</button>
         <button id="reset-btn">Reset to Defaults</button>
@@ -197,6 +245,8 @@
     </div>
   </div>
 
+  <script src="org-config.js"></script>
   <script src="options.js"></script>
 </body>
+
 </html>

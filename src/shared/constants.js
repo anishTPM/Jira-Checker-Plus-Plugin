@@ -86,6 +86,7 @@ export const DEFAULT_SETTINGS = {
   assigneeEpic: false,
   priorityEpic: false,
   weeklyHours: 40,
+  tempoToken: '',
   timelogMessage: 'Please log your hours for this week!',
   timesheetMessage: 'Please submit your timesheet for this month!'
 };

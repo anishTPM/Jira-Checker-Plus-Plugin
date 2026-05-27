@@ -5,6 +5,7 @@ import { CloudMetricsTracker } from './services/metrics.js';
 import { CloudTempoManager } from './services/tempo.js';
 import { CloudUIManager } from './services/ui.js';
 import { CloudBulkTaskCreator } from './services/bulk-task-creator.js';
+import { CloudEpicCreator } from './services/epic-creator.js';
 import { CloudTempoGuard } from './services/tempo-guard.js';
 
 (function () {
@@ -44,8 +45,10 @@ import { CloudTempoGuard } from './services/tempo-guard.js';
 
     if (settings.workflow === 'new') {
       CloudBulkTaskCreator.addButton(issueKey, apiData.fields);
+      CloudEpicCreator.addButton(issueKey, apiData.fields);
     } else {
       document.getElementById('jcp-cloud-bulk-btn-wrap')?.remove();
+      document.getElementById('jcp-epic-creator-btn-wrap')?.remove();
     }
   }
 

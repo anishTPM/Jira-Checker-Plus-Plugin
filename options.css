@@ -157,7 +157,8 @@ h2 {
 }
 
 .input-label input[type="number"],
-.input-label input[type="text"] {
+.input-label input[type="text"],
+.input-label input[type="password"] {
   padding: 8px 12px;
   border: 1px solid #dfe1e6;
   border-radius: 4px;

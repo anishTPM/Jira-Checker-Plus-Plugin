@@ -4,3 +4,6 @@ releases/
 *.zip
 .DS_Store
 Thumbs.db
+
+# Org-specific config (never commit this)
+config.org.js

@@ -10,22 +10,18 @@ export const CloudJiraAPI = {
 
   async search(jql, fields = CLOUD_API_FIELDS, maxResults = 1000) {
     try {
-      // Use GET with query parameters
-      const fieldStr = typeof fields === 'string' ? fields : fields.join(',');
-      const url = `/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fieldStr)}&maxResults=${maxResults}`;
-      
-      console.log('JCP Cloud search URL:', url);
-      
-      const r = await fetch(url);
-      
+      const fieldArr = typeof fields === 'string' ? fields.split(',') : fields;
+      const r = await fetch('/rest/api/3/search/jql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jql, fields: fieldArr, maxResults })
+      });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
         console.warn('JCP Cloud search error:', r.status, err);
         return [];
       }
-      
       const data = await r.json();
-      console.log('JCP Cloud search result:', data.issues?.length || 0, 'issues');
       return data.issues || [];
     } catch (e) {
       console.warn('JCP Cloud search exception:', e);
@@ -86,7 +82,7 @@ export const CloudJiraAPI = {
     } catch { return null; }
   },
 
-  async getTempoWeeklyHours(accountId) {
+  async getTempoWeeklyHours(accountId, tempoToken = null) {
     try {
       const now = new Date();
       const day = now.getDay();
@@ -96,19 +92,52 @@ export const CloudJiraAPI = {
       monday.setHours(0, 0, 0, 0);
       const friday = new Date(monday);
       friday.setDate(monday.getDate() + 4);
-
+      friday.setHours(23, 59, 59, 999);
       const from = monday.toISOString().split('T')[0];
       const to = friday.toISOString().split('T')[0];
 
-      let url = `/rest/tempo-timesheets/4/worklogs?dateFrom=${from}&dateTo=${to}`;
-      if (accountId) url += `&worker=${encodeURIComponent(accountId)}`;
+      // If Tempo token provided, use Tempo Cloud API directly
+      if (tempoToken) {
+        const r = await fetch(`https://api.tempo.io/4/worklogs?from=${from}&to=${to}&limit=1000`, {
+          headers: { 'Authorization': `Bearer ${tempoToken}` }
+        });
+        console.log('JCP Tempo API status:', r.status);
+        if (r.ok) {
+          const data = await r.json();
+          const results = data.results || [];
+          const hours = results
+            .filter(l => l.author?.accountId === accountId)
+            .reduce((sum, l) => sum + (l.timeSpentSeconds || 0), 0) / 3600;
+          console.log('JCP Tempo: hours via token:', hours);
+          return hours;
+        }
+      }
 
-      const r = await fetch(url);
-      if (!r.ok) return 0;
-      const data = await r.json();
-      const results = data.results || data;
-      return (Array.isArray(results) ? results : []).reduce((sum, log) => sum + (log.timeSpentSeconds || 0), 0) / 3600;
-    } catch { return 0; }
+      // Fallback: Jira native worklog API
+      const r = await fetch(`/rest/api/3/worklog/updated?since=${monday.getTime()}`);
+      if (!r.ok) return null;
+      const updated = await r.json();
+      const ids = (updated.values || []).map(v => v.worklogId);
+      if (!ids.length) return 0;
+      const r2 = await fetch('/rest/api/3/worklog/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ids.slice(0, 1000) })
+      });
+      if (!r2.ok) return null;
+      const logs = await r2.json();
+      const filtered = (Array.isArray(logs) ? logs : []).filter(l => {
+        const started = new Date(l.started).getTime();
+        return (l.author?.accountId === accountId || l.updateAuthor?.accountId === accountId) &&
+          started >= monday.getTime() && started <= friday.getTime();
+      });
+      const hours = filtered.reduce((sum, l) => sum + (l.timeSpentSeconds || 0), 0) / 3600;
+      console.log('JCP Tempo: hours via Jira worklog API:', hours);
+      return hours;
+    } catch (e) {
+      console.warn('JCP Tempo error:', e);
+      return null;
+    }
   },
 
   async isTimesheetSubmitted() {
